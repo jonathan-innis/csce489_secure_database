@@ -20,6 +20,6 @@ Clients can connect to the server via TCP and send a textual program, which is a
 ```
 {
   "username": <string>,
-  "password": hash(<string>),
+  "password": hash(<string>)
 }
 ```

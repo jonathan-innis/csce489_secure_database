@@ -78,10 +78,18 @@ class Principal:
 }
 ```
 
-## Principal Password File Schema
+## Password File Schema
 
 ```json
 {
   "username": "hash(password)"
 }
 ```
+
+## Output Schema
+
+```json
+{
+  "status": "status_message",
+  "output": "<value>"
+}

@@ -26,7 +26,7 @@ class Database:
 class Store:
 
   def __init__(self):
-    self.store = {}
+    self.store = {"record_name": "<value>"}
   
   def set_record(self):
     pass
@@ -53,37 +53,12 @@ class Principal:
 
   def __init__(self, username, password):
     self.username = username
-    self.password = password
-    self.local_permissions = {}
-    self.global_permissions = {}
+    self.password = hash(password)
+    self.local_permissions = {"record_name": ["permission"]}
+    self.global_permissions = {"record_name": ["permission"]}
     
   def authenticate(self):
     pass
-```
-
-### 
-
-## Database Schema
-
-```json
-{
-  "principals": {
-    "principal_username": {
-      "record_name": ["permission"]
-     }
-   },
-   "records": {
-    "record_name": "<value>"
-   }
-}
-```
-
-## Password File Schema
-
-```json
-{
-  "username": "hash(password)"
-}
 ```
 
 ## Output Schema

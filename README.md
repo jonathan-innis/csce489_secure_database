@@ -13,17 +13,11 @@ Local variables will be destroyed from the local store when the program complete
 ```python
 class Database:
 
-  def __init__(self):
-    self.principals = {"name": Principal}
-    self.default_delegator = Principal
-    self.local_store = Store
-    self.global_store = Store
-    
-  def build_from_file(self):
-    pass
-    
-  def write_to_file(self):
-    pass
+    def __init__(self):
+        self.principals = {"name": Principal}
+        self.default_delegator = Principal
+        self.local_store = Store
+        self.global_store = Store
   
 ```
 
@@ -31,46 +25,60 @@ class Database:
 ```python
 class Store:
 
-  def __init__(self):
-    self.store = {"record_name": "<value>"}
-  
-  def set_record(self):
-    pass
-  
-  def append_record(self):
-    pass
+    def __init__(self):
+        self.store = {"record_name": "<value>"}
     
-  def read_record(self):
-    pass
-  
-  def for_each_record(self):
-    pass
-  
-  def change_permissions(self):
-    pass
-  
-  def delete_permissions(self):
-    pass
+    def set_record(self):
+        pass
+    
+    def append_record(self):
+        pass
+        
+    def read_record(self):
+        pass
+    
+    def for_each_record(self):
+        pass
+    
+    def change_permissions(self):
+        pass
+    
+    def delete_permissions(self):
+        pass
 ```
 
 ### Principal
 ```python
 class Principal:
-
-  def __init__(self, username, password):
-    self.username = username
-    self.password = hash(password)
-    self.local_permissions = {"record_name": ["permission"]}
-    self.global_permissions = {"record_name": ["permission"]}
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+        self.local_permissions = {}
+        self.global_permissions = {}
     
-  def authenticate(self):
-    pass
+    def authenticate(self, password):
+        pass
+
+    def add_local_permission():
+        pass
+
+    def delete_local_permission():
+        pass
+    
+    def add_global_permission():
+        pass
+
+    def delete_global_permission():
+        pass
+
+    def check_permission():
+        pass
 ```
 
 ## Output Schema
 
 ```json
 {
-  "status": "status_message",
-  "output": "<value>"
+    "status": "status_message",
+    "output": "<value>"
 }

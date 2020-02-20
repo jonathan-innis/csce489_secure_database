@@ -18,12 +18,6 @@ class Database:
     self.default_delegator = Principal
     self.local_store = Store
     self.global_store = Store
-    
-  def build_from_file(self):
-    pass
-    
-  def write_to_file(self):
-    pass
   
 ```
 

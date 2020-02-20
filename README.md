@@ -12,7 +12,6 @@ Local variables will be destroyed from the local store when the program complete
 ### Database
 ```python
 class Database:
-
     def __init__(self):
         self.principals = {"name": Principal}
         self.default_delegator = Principal
@@ -24,7 +23,6 @@ class Database:
 ### Store 
 ```python
 class Store:
-
     def __init__(self):
         self.store = {"record_name": "<value>"}
     

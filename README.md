@@ -67,21 +67,21 @@ class Principal:
 
 ```json
 {
-  "key": {
-    "data": "<value>",
-    "read": ["principal_name"],
-    "write": ["principal_name"],
-    "append": ["principal_name"],
-    "delegate": ["principal_name"]
+  "principals": {
+    "principal_username": {
+      "record_name": ["permission"]
+     }
+   },
+   "records": {
+    "record_name": "<value>"
    }
 }
 ```
 
-## Principal File Schema
+## Principal Password File Schema
 
 ```json
 {
-  "username": "<string>",
-  "password": "<string>"
+  "username": "hash(password)"
 }
 ```

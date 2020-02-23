@@ -62,6 +62,7 @@ class Database:
             raise SecurityViolation("current principal is not admin user")
         p = Principal(username, password, self.default_delegator)
         self.principals[username] = p
+
         return "CREATE_PRINCIPAL"
 
     def set_principal(self, username, password):
@@ -82,4 +83,34 @@ class Database:
         if not p.authenticate(username):
             raise SecurityViolation("invalid username/password combination for principal")
         self.current_principal = p
+
+    def change_password(self, username, password):
+        """
+        The function to change the password of a principal in the database
+
+        Parameters:
+            username (string): The username of the principal whose password we wish to change
+            password (string): The new password for the principal.
+
+        Returns:
+            string: Returns "CHANGE_PASSWORD" if execution completes correctly.
+        
+        Errors:
+            SecurityViolation(): If the username specified is not the current principal or the current principal is not admin
+            PrincipalKeyError(): If the username specified does not exist in the database.
+        """
+
+        if username != current_principal.username or not current_principal.is_admin:
+            raise SecurityViolation("cannot change password of another principal without admin privileges")
+        
+        if username == current_principal.username:
+            current_principal.change_password(password)
+            self.principals[username] = current_principal
+        else:
+            if username not in self.principals:
+                raise PrincipalKeyError("username for principal does not exist in the database")
+            self.principals[username].change_password(password)
+        
+        return "CHANGE_PASSWORD"
+
         

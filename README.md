@@ -1,6 +1,28 @@
 # Secure Database
 Clients can connect to the server via TCP and send a textual program, which is a list of commands whose grammar is given below. The server executes the program, sends textual output back to the client, and disconnects. Executing a program may cause data to be stored on the server, which can be accessed later by other programs. The server accepts one connection at a time (so programs never execute concurrently).
 
+## Unit Testing
+Testing will be done with the **Pytest** packages. This can be installed by running the following:
+```
+pip install pytest
+```
+Unit tests must completely pass for code to be merged in. Tests can be run with the following from the root directory:
+```
+pytest
+```
+
+## Linter
+Linting will be done with the **Flake8** package. This can be installed by running the following:
+```
+pip install flake8
+```
+Linting will be done to check warnings and undefined definitions with the following commands from the root directory:
+```
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+```
+Warnings will be treated as errors for linting purposes.
+
 ## Program Execution
 When programs execute, they will create a temporary version of the database so that any changes that are invalid can be rolled back to the old version of the database. If changes are valid to completion of the program, the temporary `Database` replaces the older version of the database.
 

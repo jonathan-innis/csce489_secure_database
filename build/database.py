@@ -1,21 +1,27 @@
 from store import Store
+from principal import Principal
+
 
 class PrincipalKeyError(Exception):
     pass
 
+
 class SecurityViolation(Exception):
     pass
+
 
 class Database:
     """
     This is the class for the database.
 
     Attributes:
-        principals ({string: Principal}): Map from the username of the principal to the Principal object.
-        current_principal (Principal): Current principal that has been authenticated and is operating on the database.
-        default_delegator (Principal): Default delegator that rights will be copied from.
-        local_store ({string: [] | {} | string}): Local store to be destroyed after program execution completes. Map from the record name to the record itself.
-        global_store ({string: [] | {} | string}): Global store that persists across program executions. Map from the record name to the record itself.
+        - principals ({string: Principal}): Map from the username of the principal to the Principal object.
+        - current_principal (Principal): Current principal that has been authenticated and is operating on the database.
+        - default_delegator (Principal): Default delegator that rights will be copied from.
+        - local_store ({string: [] | {} | string}): Local store to be destroyed after program execution completes.
+          Map from the record name to the record itself.
+        - global_store ({string: [] | {} | string}): Global store that persists across program executions.
+          Map from the record name to the record itself.
     """
 
     def __init__(self, admin_password):
@@ -24,7 +30,7 @@ class Database:
 
         Paramaters:
             admin_password (string): The admin password passed when the database is initialized.
-        
+
         - Initializes all of the values to have no data in them
         - Creates the admin user and inserts them into the set of principals
         """
@@ -47,10 +53,10 @@ class Database:
         Parameters:
             username (string): The username of the new principal.
             password (string): The password of the new principal.
-        
+
         Returns:
             string: Returns "CREATE_PRINCIPAL" if execution completes correctly.
-        
+
         Errors:
             PrincipalKeyError(): If username already exists in the database
             SecurityViolation(): If current principal creating user isn't admin
@@ -74,7 +80,8 @@ class Database:
             password (string): The password to authenticate the given principal username.
 
         Errors:
-            SecurityViolation(): If the username does not exist in the database or the given username password combination does not authenticate correctly.
+            SecurityViolation(): If the username does not exist in the database or the given
+                                 username password combination does not authenticate correctly.
         """
 
         if username not in self.principals:
@@ -94,23 +101,21 @@ class Database:
 
         Returns:
             string: Returns "CHANGE_PASSWORD" if execution completes correctly.
-        
+
         Errors:
             SecurityViolation(): If the username specified is not the current principal or the current principal is not admin
             PrincipalKeyError(): If the username specified does not exist in the database.
         """
 
-        if username != current_principal.username or not current_principal.is_admin:
+        if username != self.current_principal.username or not self.current_principal.is_admin:
             raise SecurityViolation("cannot change password of another principal without admin privileges")
-        
-        if username == current_principal.username:
-            current_principal.change_password(password)
-            self.principals[username] = current_principal
+
+        if username == self.current_principal.username:
+            self.current_principal.change_password(password)
+            self.principals[username] = self.current_principal
         else:
             if username not in self.principals:
                 raise PrincipalKeyError("username for principal does not exist in the database")
             self.principals[username].change_password(password)
-        
-        return "CHANGE_PASSWORD"
 
-        
+        return "CHANGE_PASSWORD"

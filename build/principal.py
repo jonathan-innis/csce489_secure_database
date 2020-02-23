@@ -1,17 +1,18 @@
 import bcrypt
 
+
 class Principal:
     """
     This is the class for principals in the database
 
     Attributes:
-        username (string): The username of the principal. 
+        username (string): The username of the principal.
         salt (byte_string): The salt to use when hashing a principal's password.
         password (byte_string): The stored hashed password.
         is_admin (bool): Whether the user has admin privileges or not.
     """
 
-    def __init__(self, username, password, default_delegator = None):
+    def __init__(self, username, password, default_delegator=None):
         """
         The constructor for Principal class.
 
@@ -55,7 +56,7 @@ class Principal:
 
     def change_password(self, new_password):
         """
-        The function to generate a new salt for the new password and 
+        The function to generate a new salt for the new password and
         hash the new password with this salt
 
         Parameters:
@@ -70,7 +71,7 @@ class Principal:
 
     def delete_local_permission():
         pass
-    
+
     def add_global_permission():
         pass
 

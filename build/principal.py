@@ -46,7 +46,7 @@ class Principal:
             password (string): The password to compare to the current stored password
 
         Returns:
-            Bool: Whether the given password authenticates the user correctly.
+            bool: Whether the given password authenticates the user correctly.
         """
 
         if bcrypt.checkpw(password.encode('utf-8'), self.password):

@@ -1,7 +1,28 @@
-#!/bin/bash
+#!/usr/bin/python3
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-port=$1
-password=$2
+import sys
+import socketserver
 
-python3 server.py $port $password
+print('Number of arguments:', len(sys.argv), 'arguments.')
+print('Argument List:', str(sys.argv))
+
+class MyTCPHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        # self.request is the TCP socket connected to the client
+        self.data = self.request.recv(1024).strip()
+        print("{} wrote:".format(self.client_address[0]))
+        print(self.data)
+        self.request.sendall(b"Message recieved: " + self.data + b"\n")
+
+if __name__ == "__main__":
+    HOST, PORT = "localhost", 4444
+    if(len(sys.argv) == 2):
+        PORT = int(sys.argv[1])
+    if(len(sys.argv) == 3):
+        PORT = int(sys.argv[1])
+        password = sys.argv[2]  #here's the password to use when creating the admin principal
+    else:
+        password = "admin"
+
+    server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
+    server.serve_forever()

@@ -66,17 +66,17 @@ class Principal:
         self.salt = bcrypt.gensalt()
         self.password = bcrypt.hashpw(new_password.encode('utf-8'), self.salt)
 
-    def add_local_permission(item, permission):
+    def add_local_permission(self, item, permission):
         pass
 
-    def delete_local_permission():
+    def delete_local_permission(self):
         pass
 
-    def add_global_permission():
+    def add_global_permission(self):
         pass
 
-    def delete_global_permission():
+    def delete_global_permission(self):
         pass
 
-    def check_permission():
+    def check_permission(self):
         pass

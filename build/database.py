@@ -45,7 +45,7 @@ class Database:
         p = Principal("admin", admin_password, self.__default_delegator)
         p.is_admin = True
         self.__principals["admin"] = p
-    
+
     def get_principal(self, username):
         """
         The function to return a principal from the database.
@@ -57,13 +57,13 @@ class Database:
             Principal: Returns the principal with the given username in the database
 
         Errors:
-            PrincipalKeyError(): If username is not in the database. 
+            PrincipalKeyError(): If username is not in the database.
         """
 
         if username not in self.__principals:
             raise PrincipalKeyError("username for principal does not exist")
         return self.__principals[username]
-    
+
     def get_current_principal(self):
         """
         The function to return the current principal from the database.

@@ -1,5 +1,5 @@
 from build.store import Store
-from build.principal import Principal, Permission
+from build.principal import Principal, Permission, ALL_PERMISSIONS
 
 
 class PrincipalKeyError(Exception):
@@ -142,10 +142,10 @@ class Database:
         if not self.__current_principal:
             raise SecurityViolation("current principal is not set")
 
-        if username != self.__current_principal.username and not self.__current_principal.is_admin():
+        if username != self.__current_principal.get_username() and not self.__current_principal.is_admin():
             raise SecurityViolation("cannot change password of another principal without admin privileges")
 
-        if username == self.__current_principal.username:
+        if username == self.__current_principal.get_username():
             self.__current_principal.change_password(password)
             self.__principals[username] = self.__current_principal
         else:
@@ -176,4 +176,29 @@ class Database:
                 raise SecurityViolation("principal does not have write permission on record")
         else:
             self.__global_store.set_record(record_name, value)
-            self.__current_principal.add_permissions(record_name, Permission.ALL)
+            self.__current_principal.add_permissions(record_name, ALL_PERMISSIONS)
+
+    def return_record(self, record_name):
+        """
+        The function to return a record either from the global store or the local store
+
+        Parameters:
+            record_name (string): The name of the record
+        
+        Returns:
+            (string | dict | list): The value associated with the record
+        
+        Errors:
+            SecurityViolation(): If the principal does not have write permissions on the record
+            RecordKeyError(): If the record does not exist in the database
+        """
+
+        if self.__local_store.read_record(record_name):
+            return self.__local_store.read_record(record_name)
+        elif self.__global_store.read_record(record_name):
+            if self.__current_principal.has_permission(record_name, Permission.READ):
+                return self.__global_store.read_record(record_name)
+            else:
+                raise SecurityViolation("principal does not have read permission on record")
+        else:
+            raise RecordKeyError("record does not exist in the database")

@@ -1,12 +1,14 @@
 import bcrypt
 from enum import Enum
 
+
 class Permission(Enum):
     WRITE = 1
     READ = 2
     APPEND = 3
     DELEGATE = 4
-    ALL = [WRITE, READ, APPEND, DELEGATE]
+
+ALL_PERMISSIONS = (Permission.WRITE, Permission.READ, Permission.APPEND, Permission.DELEGATE)
 
 
 class PermissionsKeyError(Exception):
@@ -47,6 +49,16 @@ class Principal:
 
         if default_delegator:
             self.__permissions = dict(default_delegator.get_permissions())
+    
+    def get_username(self):
+        """
+        The getter function for username.
+
+        Returns:
+            string: Username of the principal
+        """
+        
+        return self.__username
 
     def is_admin(self):
         """

@@ -10,7 +10,7 @@ class Test_Init:
 
     def test_admin_marked_admin(self):
         d = Database("test")
-        assert d.get_principal("admin").is_admin
+        assert d.get_principal("admin").is_admin()
 
     def test_admin_password_correct(self):
         d = Database("test")
@@ -25,7 +25,7 @@ class Test_Set_Current_Principal:
         d = Database("test")
         d.set_principal("admin", "test")
         assert d.get_current_principal().username == "admin"
-        assert d.get_current_principal().is_admin
+        assert d.get_current_principal().is_admin()
 
     def test_set_principal_other(self):
         d = Database("test")
@@ -35,7 +35,7 @@ class Test_Set_Current_Principal:
         d.set_principal("user1", "test")
 
         assert d.get_current_principal().username == "user1"
-        assert not d.get_current_principal().is_admin
+        assert not d.get_current_principal().is_admin()
 
     def test_username_not_exist(self):
         d = Database("test")
@@ -148,7 +148,7 @@ class Test_Change_Password:
             d.change_password("admin", "newpassword")
         assert "cannot change password of another principal without admin privileges" in str(excinfo.value)
 
-    def test_user_chnage_password_no_exist(self):
+    def test_user_change_password_no_exist(self):
         d = Database("test")
         d.set_principal("admin", "test")
 

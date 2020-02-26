@@ -1,4 +1,16 @@
 import bcrypt
+from enum import Enum
+
+class Permission(Enum):
+    WRITE = 1
+    READ = 2
+    APPEND = 3
+    DELEGATE = 4
+    ALL = [WRITE, READ, APPEND, DELEGATE]
+
+
+class PermissionsKeyError(Exception):
+    pass
 
 
 class Principal:
@@ -12,7 +24,7 @@ class Principal:
         is_admin (bool): Whether the user has admin privileges or not.
     """
 
-    def __init__(self, username, password, default_delegator=None):
+    def __init__(self, username, password, admin=False, default_delegator=None):
         """
         The constructor for Principal class.
 
@@ -27,17 +39,34 @@ class Principal:
         - Copies all of the permissions from the default delegator
         """
 
-        self.username = username
-        self.salt = bcrypt.gensalt()
-        self.password = bcrypt.hashpw(password.encode('utf-8'), self.salt)
-        self.is_admin = False
+        self.__username = username
+        self.__salt = bcrypt.gensalt()
+        self.__password = bcrypt.hashpw(password.encode('utf-8'), self.__salt)
+        self.__admin = admin
+        self.__permissions = {}
 
-        if default_delegator is None:
-            self.local_permissions = {}
-            self.global_permissions = {}
-        else:
-            self.local_permissions = dict(default_delegator.local_permissions)
-            self.global_permissions = dict(default_delegator.global_permissions)
+        if default_delegator:
+            self.__permissions = dict(default_delegator.get_permissions())
+
+    def is_admin(self):
+        """
+        The getter function for admin.
+
+        Returns:
+            bool: Whether the user is an admin
+        """
+
+        return self.__admin
+
+    def get_permissions(self):
+        """
+        The getter function for permissions.
+
+        Returns:
+            dict({string: set(Permission)}): List of user's permissions
+        """
+
+        return self.__permissions
 
     def authenticate(self, password):
         """
@@ -50,7 +79,7 @@ class Principal:
             bool: Whether the given password authenticates the user correctly.
         """
 
-        if bcrypt.checkpw(password.encode('utf-8'), self.password):
+        if bcrypt.checkpw(password.encode('utf-8'), self.__password):
             return True
         return False
 
@@ -63,20 +92,46 @@ class Principal:
             new_password (string): The new password for the principal
         """
 
-        self.salt = bcrypt.gensalt()
-        self.password = bcrypt.hashpw(new_password.encode('utf-8'), self.salt)
+        self.__salt = bcrypt.gensalt()
+        self.__password = bcrypt.hashpw(new_password.encode('utf-8'), self.__salt)
+    
+    def add_permissions(self, record_name, permissions):
+        """
+        The function to add the given permissions to the record with the 
+        given record name
 
-    def add_local_permission(self, item, permission):
-        pass
+        Parameters:
+            record_name (string): The name of the record
+            permissions ([Permission]): A list of permissions
+        """
 
-    def delete_local_permission(self):
-        pass
+        principal_permissions = self.__permissions.get(record_name, set())
+        for permission in permissions:
+            principal_permissions.add(permission)
+        self.__permissions[record_name] = principal_permissions
 
-    def add_global_permission(self):
-        pass
+    def has_permission(self, record_name, permission):
+        """
+        The function to check if a user has the given permission on the
+        given record with the record name
 
-    def delete_global_permission(self):
-        pass
+        Parameters:
+            record_name (string): The name of the record
+            permission (Permission): The type of the permission
+        
+        Returns:
+            bool: If the user has given permission on the record
+        """
 
-    def check_permission(self):
-        pass
+        return permission in self.__permissions.get(record_name, set())
+
+    def delete_permission(self, record_name, permission):
+        """
+        The function to delete a permission from a given record
+
+        Paramaters:
+            record_name (string): The name of the record
+            permission (Permission): The type of the permission
+        """
+
+        self.__permissions[record_name].discard(permission)

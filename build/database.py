@@ -1,8 +1,12 @@
 from build.store import Store
-from build.principal import Principal
+from build.principal import Principal, Permission
 
 
 class PrincipalKeyError(Exception):
+    pass
+
+
+class RecordKeyError(Exception):
     pass
 
 
@@ -42,8 +46,7 @@ class Database:
         self.__global_store = Store()
 
         # Creates the admin
-        p = Principal("admin", admin_password, self.__default_delegator)
-        p.is_admin = True
+        p = Principal("admin", admin_password, admin=True)
         self.__principals["admin"] = p
 
     def get_principal(self, username):
@@ -93,7 +96,7 @@ class Database:
             raise PrincipalKeyError("username for principal exists in database")
         if not self.__current_principal:
             raise SecurityViolation("current principal is not set")
-        if not self.__current_principal.is_admin:
+        if not self.__current_principal.is_admin():
             raise SecurityViolation("current principal is not admin user")
         p = Principal(username, password, self.__default_delegator)
         self.__principals[username] = p
@@ -139,7 +142,7 @@ class Database:
         if not self.__current_principal:
             raise SecurityViolation("current principal is not set")
 
-        if username != self.__current_principal.username and not self.__current_principal.is_admin:
+        if username != self.__current_principal.username and not self.__current_principal.is_admin():
             raise SecurityViolation("cannot change password of another principal without admin privileges")
 
         if username == self.__current_principal.username:
@@ -151,3 +154,26 @@ class Database:
             self.__principals[username].change_password(password)
 
         return "CHANGE_PASSWORD"
+
+    def set_record(self, record_name, value):
+        """
+        The function to set a record in either the global store or the local store
+
+        Parameters:
+            record_name (string): The name of the record
+            value (string | dict | list): The value associated with the record
+
+        Errors:
+            SecurityViolation(): The current principal does not have write permission on an already existing record
+        """
+
+        if self.__local_store.read_record(record_name):
+            self.__local_store.set_record(record_name, value)
+        elif self.__global_store.read_record(record_name):
+            if self.__current_principal.has_permission(record_name, Permission.WRITE):
+                self.__global_store.set_record(record_name, value)
+            else:
+                raise SecurityViolation("principal does not have write permission on record")
+        else:
+            self.__global_store.set_record(record_name, value)
+            self.__current_principal.add_permissions(record_name, Permission.ALL)

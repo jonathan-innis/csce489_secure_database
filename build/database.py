@@ -184,10 +184,10 @@ class Database:
 
         Parameters:
             record_name (string): The name of the record
-        
+
         Returns:
             (string | dict | list): The value associated with the record
-        
+
         Errors:
             SecurityViolation(): If the principal does not have write permissions on the record
             RecordKeyError(): If the record does not exist in the database

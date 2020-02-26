@@ -1,3 +1,6 @@
+import copy
+
+
 class Store:
     """
     This is the class for stores in the database
@@ -19,26 +22,6 @@ class Store:
 
         self.__store[record_name] = value
 
-    def deepcopy_record(self, value):
-        """
-        The function to deepcopy a record so that the original is not altered
-
-        Parameters:
-            value (string | dict | list): The value associated with a record
-        
-        Returns:
-            value (string | dict | list): The copy of the given value
-        """
-
-        if isinstance(value, dict):
-            return dict(value)
-        elif isinstance(value, list):
-            return value[:]
-        elif isinstance(value, str):
-            return value
-        else:
-            return None
-
     def append_to_record(self):
         pass
 
@@ -48,12 +31,12 @@ class Store:
 
         Parameters:
             record_name (string): The name of the record
-        
+
         Returns:
             value (string | dict | list): A deepcopy of the original record
         """
 
-        return self.deepcopy_record(self.__store.get(record_name, None))
+        return copy.deepcopy(self.__store.get(record_name, None))
 
     def for_each_record(self):
         pass

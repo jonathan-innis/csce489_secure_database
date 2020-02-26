@@ -1,4 +1,4 @@
-from build.database import Database, PrincipalKeyError, SecurityViolation
+from build.database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
 import pytest
 
 
@@ -158,14 +158,14 @@ class Test_Change_Password:
 
 
 class Test_Set_Record:
-    
+
     def test_set_new_global_record(self):
         d = Database("test")
         d.set_principal("admin", "test")
-        
+
         d.set_record("x", "this is a record")
         assert d.return_record("x") == "this is a record"
-    
+
     def test_set_old_global_record(self):
         d = Database("test")
         d.set_principal("admin", "test")
@@ -176,3 +176,39 @@ class Test_Set_Record:
         d.set_record("x", ["first_elem", "second_elem"])
         ret = d.return_record("x")
         assert ret[0] == "first_elem" and ret[1] == "second_elem"
+
+    def test_write_record_no_permissions(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+        d.create_principal("user1", "password")
+
+        d.set_record("x", "this is a record")
+        assert d.return_record("x") == "this is a record"
+
+        d.set_principal("user1", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_record("x", "different_record")
+        assert "principal does not have write permission on record" in str(excinfo.value)
+
+    def test_read_record_no_permissions(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+        d.create_principal("user1", "password")
+
+        d.set_record("x", "this is a record")
+        assert d.return_record("x") == "this is a record"
+
+        d.set_principal("user1", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+    def test_read_record_no_exist(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.return_record("x")
+        assert "record does not exist in the database" in str(excinfo.value)

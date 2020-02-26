@@ -8,6 +8,7 @@ class Permission(Enum):
     APPEND = 3
     DELEGATE = 4
 
+
 ALL_PERMISSIONS = (Permission.WRITE, Permission.READ, Permission.APPEND, Permission.DELEGATE)
 
 
@@ -49,7 +50,7 @@ class Principal:
 
         if default_delegator:
             self.__permissions = dict(default_delegator.get_permissions())
-    
+
     def get_username(self):
         """
         The getter function for username.
@@ -57,7 +58,7 @@ class Principal:
         Returns:
             string: Username of the principal
         """
-        
+
         return self.__username
 
     def is_admin(self):
@@ -106,10 +107,10 @@ class Principal:
 
         self.__salt = bcrypt.gensalt()
         self.__password = bcrypt.hashpw(new_password.encode('utf-8'), self.__salt)
-    
+
     def add_permissions(self, record_name, permissions):
         """
-        The function to add the given permissions to the record with the 
+        The function to add the given permissions to the record with the
         given record name
 
         Parameters:
@@ -130,7 +131,7 @@ class Principal:
         Parameters:
             record_name (string): The name of the record
             permission (Permission): The type of the permission
-        
+
         Returns:
             bool: If the user has given permission on the record
         """

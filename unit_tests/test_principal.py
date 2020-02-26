@@ -40,6 +40,7 @@ class Test_Principal_Change_Password:
         p.change_password("89279uqhafdsh8gay2378etr8gi^2'4@&")
         assert p.authenticate("89279uqhafdsh8gay2378etr8gi^2'4@&")
 
+
 class Test_Principal_Permissions:
 
     def test_add_specific_permissions(self):
@@ -77,7 +78,7 @@ class Test_Principal_Permissions:
         p.add_permissions("record2", [Permission.WRITE])
 
         assert p.has_permission("record2", Permission.WRITE)
-        assert p.has_permission ("record1", Permission.READ)
+        assert p.has_permission("record1", Permission.READ)
 
     def test_delete_permissions(self):
         p = Principal("test", "principal")

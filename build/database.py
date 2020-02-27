@@ -178,6 +178,8 @@ class Database:
             self.__global_store.set_record(record_name, value)
             self.__current_principal.add_permissions(record_name, ALL_PERMISSIONS)
 
+        return "SET"
+
     def return_record(self, record_name):
         """
         The function to return a record either from the global store or the local store

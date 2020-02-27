@@ -177,6 +177,22 @@ class Database:
         else:
             self.__global_store.set_record(record_name, value)
             self.__current_principal.add_permissions(record_name, ALL_PERMISSIONS)
+        
+        return "SET"
+
+    def append_record(self, record_name, value):
+
+        if self.__local_store.read_record(record_name):
+            self.__local_store.append_to_record(record_name, value)
+        elif self.__global_store.read_record(record_name):
+            if self.__current_principal.has_permission(record_name, Permission.WRITE) or self.__current_principal.has_permission(record_name, Permission.APPEND):
+                self.__global_store.append_to_record(record_name, value)
+            else:
+                raise SecurityViolation("principal does not have write permission or append permission on record")
+        else:
+            raise RecordKeyError("record does not exist in the database")
+
+        return "APPEND"
 
     def return_record(self, record_name):
         """

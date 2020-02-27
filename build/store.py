@@ -1,6 +1,10 @@
 import copy
 
 
+class AppendException(Exception):
+    pass
+
+
 class Store:
     """
     This is the class for stores in the database
@@ -22,8 +26,17 @@ class Store:
 
         self.__store[record_name] = value
 
-    def append_to_record(self):
-        pass
+    def append_to_record(self, record_name, value):
+
+        record = self.__store[record_name]
+        if not isinstance(record, list):
+            raise AppendException("unable to append record to non-list object")
+        else:
+            if isinstance(value, list):
+                record += value
+            else:
+                record.append(value)
+        self.__store[record_name] = record        
 
     def read_record(self, record_name):
         """

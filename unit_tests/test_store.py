@@ -1,4 +1,5 @@
-from build.store import Store
+from build.store import Store, AppendException
+import pytest
 
 
 class Test_Set_Record:
@@ -47,3 +48,54 @@ class Test_Set_Record:
         s.set_record("x", value)
 
         assert id(value) != id(s.read_record("x"))
+
+
+class Test_Append_Record:
+
+    def test_append_string_to_record(self):
+        s = Store()
+        s.set_record("x", ["first", "second"])
+
+        s.append_record("x", "last elem")
+        record = s.read_record("x")
+
+        assert len(record) == 3
+        assert record[0] == "first"
+        assert record[1] == "second"
+        assert record[2] == "last elem"
+
+    def test_append_dict_to_record(self):
+        s = Store()
+        s.set_record("x", ["first", "second"])
+
+        s.append_record("x", {"another": "elem"})
+        record = s.read_record("x")
+        
+        assert len(record) == 3
+        assert record[0] == "first"
+        assert record[1] == "second"
+
+        # Testing that the dictionary is the third element
+        assert "another" in record[2]
+        assert record[2]["another"] == "elem"
+
+    def test_append_list_to_record(self):
+        s = Store()
+        s.set_record("x", ["first", "second"])
+
+        s.append_record("x", ["third", "fourth"])
+        record = s.read_record("x")
+
+        assert len(record) == 4
+        assert record[0] == "first"
+        assert record[1] == "second"
+        assert record[2] == "third"
+        assert record[3] == "fourth"
+
+    def test_append_not_list(self):
+        s = Store()
+        s.set_record("x", "this is another record")
+
+        with pytest.raises(AppendException) as excinfo:
+            s.append_record("x", "appended record")
+        assert "unable to append record to non-list object" in str(excinfo.value)

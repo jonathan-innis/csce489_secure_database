@@ -26,7 +26,17 @@ class Store:
 
         self.__store[record_name] = value
 
-    def append_to_record(self, record_name, value):
+    def append_record(self, record_name, value):
+        """
+        The function to append the record with the given name with the given value.
+
+        Parameters:
+            record_name (string): The name of the record
+            value (string | dict | list): The value to be appended to the record
+        
+        Errors:
+            AppendException(): If the value associated with the record name is not a list
+        """
 
         record = self.__store[record_name]
         if not isinstance(record, list):

@@ -1,4 +1,5 @@
 import bcrypt
+import copy
 from enum import Enum
 
 
@@ -49,7 +50,7 @@ class Principal:
         self.__permissions = {}
 
         if default_delegator:
-            self.__permissions = dict(default_delegator.get_permissions())
+            self.__permissions = copy.deepcopy(default_delegator.get_permissions())
 
     def get_username(self):
         """

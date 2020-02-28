@@ -455,6 +455,23 @@ class Test_For_Each:
         assert record[0] == "Jonathan"
         assert record[1] == "Reuben"
 
+    def test_record_deleted(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}]) == "SET"
+
+        assert d.for_each("y", "x", "y.name.first", True) == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.return_record("y")
+        assert "record does not exist in the database" in str(excinfo.value)
+
 
 class Test_Exit:
 

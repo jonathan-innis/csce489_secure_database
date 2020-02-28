@@ -119,7 +119,8 @@ class Principal:
             permissions ([Permission]): A list of permissions
         """
 
-        principal_permissions = self.__permissions.get(record_name, set())
+        split_record_name = record_name.split('.')
+        principal_permissions = self.__permissions.get(split_record_name[0], set())
         for permission in permissions:
             principal_permissions.add(permission)
         self.__permissions[record_name] = principal_permissions
@@ -137,7 +138,8 @@ class Principal:
             bool: If the user has given permission on the record
         """
 
-        return permission in self.__permissions.get(record_name, set())
+        split_record_name = record_name.split('.')
+        return permission in self.__permissions.get(split_record_name[0], set())
 
     def delete_permission(self, record_name, permission):
         """
@@ -148,4 +150,5 @@ class Principal:
             permission (Permission): The type of the permission
         """
 
-        self.__permissions[record_name].discard(permission)
+        split_record_name = record_name.split('.')
+        self.__permissions[split_record_name[0]].discard(permission)

@@ -1,12 +1,8 @@
-from build.store import Store
+from build.store import Store, RecordKeyError
 from build.principal import Principal, Permission, ALL_PERMISSIONS
 
 
 class PrincipalKeyError(Exception):
-    pass
-
-
-class RecordKeyError(Exception):
     pass
 
 
@@ -168,13 +164,14 @@ class Database:
 
         return "CHANGE_PASSWORD"
 
-    def set_record(self, record_name, value):
+    def set_record(self, record_name, expr, is_ref=False):
         """
         The function to set a record in either the global store or the local store
 
         Parameters:
             record_name (string): The name of the record
-            value (string | dict | list): The value associated with the record
+            expr (string | dict | list): The value or reference to be appended to the record
+            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "SET" if execution completes correctly.
@@ -186,25 +183,32 @@ class Database:
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
-            self.__local_store.set_record(record_name, value)
+            if is_ref:
+                expr = self.return_record(expr) # Pulls the referenced variable from the database
+            self.__local_store.set_record(record_name, expr)
         elif self.__global_store.read_record(record_name):
             if self.get_current_principal().has_permission(record_name, Permission.WRITE):
-                self.__global_store.set_record(record_name, value)
+                if is_ref:
+                    expr = self.return_record(expr) # Pulls the referenced variable from the database
+                self.__global_store.set_record(record_name, expr)
             else:
                 raise SecurityViolation("principal does not have write permission on record")
         else:
-            self.__global_store.set_record(record_name, value)
+            if is_ref:
+                expr = self.return_record(expr) # Pulls the referenced variable from the database
+            self.__global_store.set_record(record_name, expr)
             self.get_current_principal().add_permissions(record_name, ALL_PERMISSIONS)
 
         return "SET"
 
-    def append_record(self, record_name, value):
+    def append_record(self, record_name, expr, is_ref=False):
         """
         The function to append a value to a record with a given record name in the global or local store
 
         Parameters:
             record_name (string): The name of the record
-            value (string | dict | list): The value to be appended to the record
+            expr (string | dict | list): The value or reference to be appended to the record
+            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "APPEND" if execution completes correctly.
@@ -217,10 +221,14 @@ class Database:
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
-            self.__local_store.append_record(record_name, value)
+            if is_ref:
+                expr = self.return_record(expr)
+            self.__local_store.append_record(record_name, expr)
         elif self.__global_store.read_record(record_name):
             if self.get_current_principal().has_permission(record_name, Permission.WRITE) or self.get_current_principal().has_permission(record_name, Permission.APPEND):
-                self.__global_store.append_record(record_name, value)
+                if is_ref:
+                    expr = self.return_record(expr)
+                self.__global_store.append_record(record_name, expr)
             else:
                 raise SecurityViolation("principal does not have write permission or append permission on record")
         else:
@@ -228,13 +236,14 @@ class Database:
 
         return "APPEND"
 
-    def set_local_record(self, record_name, value):
+    def set_local_record(self, record_name, expr, is_ref=False):
         """
         The function to store a local record with the given record name in the local store
 
         Parameters:
             record_name (string): The name of the record
-            value (string | dict | list): The value associated with the record
+            expr (string | dict | list): The value or reference to be appended to the record
+            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "LOCAL" if execution completes correctly.
@@ -248,11 +257,13 @@ class Database:
         if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
             raise RecordKeyError("record name already exits in the database")
         else:
-            self.__local_store.set_record(record_name, value)
+            if is_ref:
+                expr = self.return_record(expr)
+            self.__local_store.set_record(record_name, expr)
 
         return "LOCAL"
 
-    def for_each(self, local_var, record_name, expr):
+    def for_each(self, local_var, record_name, expr, is_ref=False):
         """
         The function to iterate over a given record with a local variable and evaluate each part of the list
         wth an expression and then replace that element with the result of that experssion
@@ -269,14 +280,14 @@ class Database:
 
         self.check_principal_set()
 
-        if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
+        if self.__local_store.read_record(local_var) or self.__global_store.read_record(local_var):
             raise RecordKeyError("local variable name already exists in the database")
 
         if self.__local_store.read_record(record_name):
-            self.__local_store.for_each_record(record_name, expr)
+            self.__local_store.for_each_record(record_name, local_var, expr, is_ref)
         elif self.__global_store.read_record(record_name):
             if self.get_current_principal().has_permission(record_name, Permission.READ) and self.get_current_principal().has_permission(record_name, Permission.WRITE):
-                self.__global_store.for_each_record(record_name, expr)
+                self.__global_store.for_each_record(record_name, local_var, expr, is_ref)
             else:
                 raise SecurityViolation("principal does not have both read and write permission on record")
         else:

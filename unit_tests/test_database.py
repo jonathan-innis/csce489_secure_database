@@ -414,6 +414,48 @@ class Test_Local_Record:
         assert d.return_record("x") == "another elem"
 
 
+class Test_For_Each:
+
+    def test_record_for_each(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}]) == "SET"
+
+        assert d.for_each("y", "x", "y.name", True) == "FOREACH" == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+    
+    def test_string_for_each(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}]) == "SET"
+
+        assert d.for_each("y", "x", "string") == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "string"
+        assert record[1] == "string"
+
+    def test_multiple_levels(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}]) == "SET"
+
+        assert d.for_each("y", "x", "y.name.first", True) == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+
+
 class Test_Exit:
 
     def test_exit(self):

@@ -1,5 +1,5 @@
-from store import Store
-from principal import Principal
+from build.store import Store
+from build.principal import Principal
 
 
 class PrincipalKeyError(Exception):
@@ -35,16 +35,43 @@ class Database:
         - Creates the admin user and inserts them into the set of principals
         """
 
-        self.principals = {}
-        self.current_principal = None
-        self.default_delegator = None
-        self.local_store = Store()
-        self.global_store = Store()
+        self.__principals = {}
+        self.__current_principal = None
+        self.__default_delegator = None
+        self.__local_store = Store()
+        self.__global_store = Store()
 
         # Creates the admin
-        p = self.create_principal("admin", admin_password)
+        p = Principal("admin", admin_password, self.__default_delegator)
         p.is_admin = True
-        self.principals["admin"] = p
+        self.__principals["admin"] = p
+
+    def get_principal(self, username):
+        """
+        The function to return a principal from the database.
+
+        Paramaters:
+            username (string): The username of the principal
+
+        Returns:
+            Principal: Returns the principal with the given username in the database
+
+        Errors:
+            PrincipalKeyError(): If username is not in the database.
+        """
+
+        if username not in self.__principals:
+            raise PrincipalKeyError("username for principal does not exist")
+        return self.__principals[username]
+
+    def get_current_principal(self):
+        """
+        The function to return the current principal from the database.
+
+        Paramaters:
+            Principal: Returns the current principal from the database
+        """
+        return self.__current_principal
 
     def create_principal(self, username, password):
         """
@@ -62,12 +89,14 @@ class Database:
             SecurityViolation(): If current principal creating user isn't admin
         """
 
-        if username in self.principals:
+        if username in self.__principals:
             raise PrincipalKeyError("username for principal exists in database")
-        if not self.current_principal.is_admin:
+        if not self.__current_principal:
+            raise SecurityViolation("current principal is not set")
+        if not self.__current_principal.is_admin:
             raise SecurityViolation("current principal is not admin user")
-        p = Principal(username, password, self.default_delegator)
-        self.principals[username] = p
+        p = Principal(username, password, self.__default_delegator)
+        self.__principals[username] = p
 
         return "CREATE_PRINCIPAL"
 
@@ -84,12 +113,12 @@ class Database:
                                  username password combination does not authenticate correctly.
         """
 
-        if username not in self.principals:
+        if username not in self.__principals:
             raise SecurityViolation("invalid username/password combination for principal")
-        p = self.principals[username]
-        if not p.authenticate(username):
+        p = self.__principals[username]
+        if not p.authenticate(password):
             raise SecurityViolation("invalid username/password combination for principal")
-        self.current_principal = p
+        self.__current_principal = p
 
     def change_password(self, username, password):
         """
@@ -107,15 +136,18 @@ class Database:
             PrincipalKeyError(): If the username specified does not exist in the database.
         """
 
-        if username != self.current_principal.username or not self.current_principal.is_admin:
+        if not self.__current_principal:
+            raise SecurityViolation("current principal is not set")
+
+        if username != self.__current_principal.username and not self.__current_principal.is_admin:
             raise SecurityViolation("cannot change password of another principal without admin privileges")
 
-        if username == self.current_principal.username:
-            self.current_principal.change_password(password)
-            self.principals[username] = self.current_principal
+        if username == self.__current_principal.username:
+            self.__current_principal.change_password(password)
+            self.__principals[username] = self.__current_principal
         else:
-            if username not in self.principals:
+            if username not in self.__principals:
                 raise PrincipalKeyError("username for principal does not exist in the database")
-            self.principals[username].change_password(password)
+            self.__principals[username].change_password(password)
 
         return "CHANGE_PASSWORD"

@@ -1,4 +1,4 @@
-from build.store import Store, AppendException
+from build.store import Store, AppendException, ForEachException
 import pytest
 
 
@@ -99,3 +99,66 @@ class Test_Append_Record:
         with pytest.raises(AppendException) as excinfo:
             s.append_record("x", "appended record")
         assert "unable to append record to non-list object" in str(excinfo.value)
+
+
+class Test_For_Each_Record:
+    
+    def test_string_for_each(self):
+        s = Store()
+        s.set_record("x", ["first", "second", "third"]) == "SET"
+
+        s.for_each_record("x", lambda x: x + " elem") == "FOREACH"
+        
+        record = s.read_record("x")
+        assert len(record) == 3
+        assert record[0] == "first elem"
+        assert record[1] == "second elem"
+        assert record[2] == "third elem"
+
+    def test_record_for_each(self):
+        s = Store()
+        s.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}]) == "SET"
+
+        s.for_each_record("x", lambda x: x["name"]) == "FOREACH"
+
+        record = s.read_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+
+    def test_list_for_each(self):
+        s = Store()
+        s.set_record("x", [["one", "two"], ["three", "four"]]) == "SET"
+
+        s.for_each_record("x", lambda x: x[1]) == "FOREACH"
+
+        record = s.read_record("x")
+        assert len(record) == 2
+        assert record[0] == "two"
+        assert record[1] == "four"
+
+    def test_fail_eval_to_list(self):
+        s = Store()
+        s.set_record("x", [{"name": ["Jonathan", "Innis"]}, {"name": ["Reuben", "Tadpatri"]}])
+
+        with pytest.raises(ForEachException) as excinfo:
+            s.for_each_record("x", lambda x: x["name"])
+        assert "expression evaluates to list object" in str(excinfo.value)
+
+    def test_fail_list(self):
+        s = Store()
+        s.set_record("x", "element")
+
+        with pytest.raises(ForEachException) as excinfo:
+            s.for_each_record("x", lambda x: x + " element")
+        assert "unable to iterate through non-list object" in str(excinfo.value)
+
+    def test_single_list_elem(self):
+        s = Store()
+        s.set_record("x", ["element"])
+
+        s.for_each_record("x", lambda x: x + " element")
+        
+        record = s.read_record("x")
+        assert len(record) == 1
+        record[0] == "element element"

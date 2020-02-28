@@ -252,6 +252,39 @@ class Database:
 
         return "LOCAL"
 
+    def for_each(self, local_var, record_name, expr):
+        """
+        The function to iterate over a given record with a local variable and evaluate each part of the list
+        wth an expression and then replace that element with the result of that experssion
+
+        Parameters:
+            local_var (string): The name of the local variable
+            record_name (string): The name of the record
+            expr (function): The function to execute on each part of the record
+
+        Errors:
+            RecordKeyError(): The local variable name already exists in the database or the record_name does not exist in the database
+            SecurityVioloation(): The principal does not have permissions to both read and write the record
+        """
+
+        self.check_principal_set()
+
+        if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
+            raise RecordKeyError("local variable name already exists in the database")
+
+        if self.__local_store.read_record(record_name):
+            self.__local_store.for_each_record(record_name, expr)
+        elif self.__global_store.read_record(record_name):
+            if self.get_current_principal().has_permission(record_name, Permission.READ) and self.get_current_principal().has_permission(record_name, Permission.WRITE):
+                self.__global_store.for_each_record(record_name, expr)
+            else:
+                raise SecurityViolation("principal does not have both read and write permission on record")
+        else:
+            raise RecordKeyError("record name does not exist in the database")
+
+        return "FOREACH"
+        
+
     def return_record(self, record_name):
         """
         The function to return a record either from the global store or the local store

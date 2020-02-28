@@ -5,6 +5,10 @@ class AppendException(Exception):
     pass
 
 
+class ForEachException(Exception): 
+    pass
+
+
 class Store:
     """
     This is the class for stores in the database
@@ -61,5 +65,25 @@ class Store:
 
         return copy.deepcopy(self.__store.get(record_name, None))
 
-    def for_each_record(self):
-        pass
+    def for_each_record(self, record_name, expr):
+        """
+        The function to iterate over a record name and execute a given expression on each element
+
+        Parameters:
+            record_name (string): The name of the record
+            expr (function): The function to execute on each part of the record
+        
+        Errors:
+            ForEachException(): If the record with the given record name is not a list or the 
+                expression function evaluates to a list on a given element
+        """
+
+        record = self.__store[record_name]
+        if not isinstance(record, list):
+            raise ForEachException("unable to iterate through non-list object")
+
+        for i, elem in enumerate(record):
+            record[i] = expr(elem)
+            if isinstance(record[i], list):
+                raise ForEachException("expression evaluates to list object")
+        self.set_record(record_name, record)

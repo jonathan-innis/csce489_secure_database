@@ -198,6 +198,7 @@ class Database:
                 expr = self.return_record(expr) # Pulls the referenced variable from the database
             self.__global_store.set_record(record_name, expr)
             self.get_current_principal().add_permissions(record_name, ALL_PERMISSIONS)
+            self.__principals["admin"].add_permissions(record_name, ALL_PERMISSIONS)
 
         return "SET"
 

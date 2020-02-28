@@ -120,7 +120,7 @@ class Test_Change_Password:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.create_principal("user1", "otherpassword")
+        assert d.create_principal("user1", "otherpassword") == "CREATE_PRINCIPAL"
         assert d.get_principal("user1").authenticate("otherpassword")
 
         assert d.change_password("user1", "newpassword") == "CHANGE_PASSWORD"
@@ -130,7 +130,7 @@ class Test_Change_Password:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.create_principal("user1", "otherpassword")
+        assert d.create_principal("user1", "otherpassword") == "CREATE_PRINCIPAL"
         d.set_principal("user1", "otherpassword")
         assert d.get_principal("user1").authenticate("otherpassword")
 
@@ -141,7 +141,7 @@ class Test_Change_Password:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.create_principal("user1", "password")
+        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
         d.set_principal("user1", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -170,17 +170,17 @@ class Test_Set_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
     def test_set_old_global_record(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
-        d.set_record("x", ["first_elem", "second_elem"])
+        assert d.set_record("x", ["first_elem", "second_elem"]) == "SET"
         ret = d.return_record("x")
         assert ret[0] == "first_elem" and ret[1] == "second_elem"
 
@@ -188,18 +188,18 @@ class Test_Set_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_local_record("x", "elem")
+        assert d.set_local_record("x", "elem") == "LOCAL"
         assert d.return_record("x") == "elem"
 
-        d.set_record("x", "new elem")
+        assert d.set_record("x", "new elem") == "SET"
         assert d.return_record("x") == "new elem"
 
     def test_write_record_no_permissions(self):
         d = Database("test")
         d.set_principal("admin", "test")
-        d.create_principal("user1", "password")
+        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
         d.set_principal("user1", "password")
@@ -211,9 +211,9 @@ class Test_Set_Record:
     def test_read_record_no_permissions(self):
         d = Database("test")
         d.set_principal("admin", "test")
-        d.create_principal("user1", "password")
+        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
         d.set_principal("user1", "password")
@@ -236,7 +236,7 @@ class Test_Append_Record:
     def test_current_principal_not_set(self):
         d = Database("test")
         d.set_principal("admin", "test")
-        d.set_record("x", ["record"])
+        assert d.set_record("x", ["record"]) == "SET"
         d.exit()
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -247,12 +247,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", ["one"])
+        assert d.set_record("x", ["one"]) == "SET"
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        d.append_record("x", "two")
+        assert d.append_record("x", "two") == "APPEND"
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -262,12 +262,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", ["one"])
+        assert d.set_record("x", ["one"]) == "SET"
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        d.append_record("x", {"another": ["record"]})
+        assert d.append_record("x", {"another": ["record"]}) == "APPEND"
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -280,12 +280,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", ["one"])
+        assert d.set_record("x", ["one"]) == "SET"
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        d.append_record("x", ["two", "three", "four"])
+        assert d.append_record("x", ["two", "three", "four"]) == "APPEND"
         record = d.return_record("x")
         assert len(record) == 4
         assert record[0] == "one"
@@ -297,12 +297,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_local_record("x", ["one"])
+        assert d.set_local_record("x", ["one"]) == "LOCAL"
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        d.append_record("x", "two")
+        assert d.append_record("x", "two") == "APPEND"
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -312,12 +312,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_local_record("x", ["one"])
+        assert d.set_local_record("x", ["one"]) == "LOCAL"
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        d.append_record("x", {"another": ["record"]})
+        assert d.append_record("x", {"another": ["record"]}) == "APPEND"
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -330,12 +330,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_local_record("x", ["one"])
+        assert d.set_local_record("x", ["one"]) == "LOCAL"
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        d.append_record("x", ["two", "three", "four"])
+        assert d.append_record("x", ["two", "three", "four"]) == "APPEND"
         record = d.return_record("x")
         assert len(record) == 4
         assert record[0] == "one"
@@ -347,13 +347,13 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", ["one", "two"])
+        assert d.set_record("x", ["one", "two"]) == "SET"
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
         assert record[1] == "two"
 
-        d.create_principal("user1", "password")
+        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
         d.set_principal("user1", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -382,14 +382,14 @@ class Test_Local_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_local_record("x", "elem")
+        assert d.set_local_record("x", "elem") == "LOCAL"
         assert d.return_record("x") == "elem"
 
     def test_add_local_record_duplicate(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_local_record("x", "elem")
+        assert d.set_local_record("x", "elem") == "LOCAL"
         assert d.return_record("x") == "elem"
 
         with pytest.raises(RecordKeyError) as excinfo:
@@ -400,7 +400,7 @@ class Test_Local_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_local_record("x", "elem")
+        assert d.set_local_record("x", "elem") == "LOCAL"
         assert d.return_record("x") == "elem"
 
         d.exit()
@@ -410,7 +410,7 @@ class Test_Local_Record:
             d.return_record("x")
         assert "record does not exist in the database" in str(excinfo.value)
 
-        d.set_local_record("x", "another elem")
+        assert d.set_local_record("x", "another elem") == "LOCAL"
         assert d.return_record("x") == "another elem"
 
 

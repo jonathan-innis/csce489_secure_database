@@ -159,7 +159,7 @@ class Test_Change_Password:
 
 class Test_Set_Record:
 
-    def test_current_principal_not_set(self):
+    def set_global_current_principal_not_set(self):
         d = Database("test")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -183,6 +183,16 @@ class Test_Set_Record:
         d.set_record("x", ["first_elem", "second_elem"])
         ret = d.return_record("x")
         assert ret[0] == "first_elem" and ret[1] == "second_elem"
+
+    def test_set_old_local_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_local_record("x", "elem")
+        assert d.return_record("x") == "elem"
+
+        d.set_record("x", "new elem")
+        assert d.return_record("x") == "new elem"
 
     def test_write_record_no_permissions(self):
         d = Database("test")
@@ -271,6 +281,56 @@ class Test_Append_Record:
         d.set_principal("admin", "test")
 
         d.set_record("x", ["one"])
+        record = d.return_record("x")
+        assert len(record) == 1
+        assert record[0] == "one"
+
+        d.append_record("x", ["two", "three", "four"])
+        record = d.return_record("x")
+        assert len(record) == 4
+        assert record[0] == "one"
+        assert record[1] == "two"
+        assert record[2] == "three"
+        assert record[3] == "four"
+
+    def test_append_string_local_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_local_record("x", ["one"])
+        record = d.return_record("x")
+        assert len(record) == 1
+        assert record[0] == "one"
+
+        d.append_record("x", "two")
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "one"
+        assert record[1] == "two"
+
+    def test_append_dict_local_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_local_record("x", ["one"])
+        record = d.return_record("x")
+        assert len(record) == 1
+        assert record[0] == "one"
+
+        d.append_record("x", {"another": ["record"]})
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "one"
+
+        assert "another" in record[1]
+        assert len(record[1]["another"]) == 1
+        assert record[1]["another"][0] == "record"
+
+    def test_append_list_local_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_local_record("x", ["one"])
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"

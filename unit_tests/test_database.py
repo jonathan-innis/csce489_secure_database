@@ -309,6 +309,51 @@ class Test_Append_Record:
         assert "record does not exist in the database" in str(excinfo.value)
 
 
+class Test_Local_Record:
+
+    def test_current_principal_not_set(self):
+        d = Database("test")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_local_record("x", "test")
+        assert "current principal is not set" in str(excinfo.value)
+
+    def test_add_local_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_local_record("x", "elem")
+        assert d.return_record("x") == "elem"
+
+    def test_add_local_record_duplicate(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_local_record("x", "elem")
+        assert d.return_record("x") == "elem"
+
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.set_local_record("x", "another elem")
+        assert "record name already exits in the database" in str(excinfo.value)
+
+    def test_local_records_reset(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_local_record("x", "elem")
+        assert d.return_record("x") == "elem"
+
+        d.exit()
+
+        d.set_principal("admin", "test")
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.return_record("x")
+        assert "record does not exist in the database" in str(excinfo.value)
+
+        d.set_local_record("x", "another elem")
+        assert d.return_record("x") == "another elem"
+
+
 class Test_Exit:
 
     def test_exit(self):

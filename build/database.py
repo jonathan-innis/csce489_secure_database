@@ -1,5 +1,6 @@
 from build.store import Store, RecordKeyError
-from build.principal import Principal, Permission, ALL_PERMISSIONS
+from build.principal import Principal
+from build.permissions import Permissions, Right, ALL_RIGHTS
 
 
 class PrincipalKeyError(Exception):
@@ -22,6 +23,7 @@ class Database:
           Map from the record name to the record itself.
         - global_store ({string: [] | {} | string}): Global store that persists across program executions.
           Map from the record name to the record itself.
+        - permissions (Permissions): Data store that keeps track of all of the permissions assignments in the database.
     """
 
     def __init__(self, admin_password):
@@ -40,6 +42,7 @@ class Database:
         self.__default_delegator = None
         self.__local_store = Store()
         self.__global_store = Store()
+        self.__permissions = Permissions()
 
         # Creates the admin
         p = Principal("admin", admin_password, admin=True)
@@ -164,6 +167,16 @@ class Database:
 
         return "CHANGE_PASSWORD"
 
+    def check_permission(self, record_name, right):
+        """
+        The function to check a given right on the current principal
+
+        Parameters:
+            raw_record_name (string): The name of the given record
+            right (Right): The record to check on the current principal
+        """
+        return self.__permissions.check_permission(record_name, self.get_current_principal().get_username(), right)
+
     def set_record(self, record_name, expr, is_ref=False):
         """
         The function to set a record in either the global store or the local store
@@ -187,7 +200,7 @@ class Database:
                 expr = self.return_record(expr) # Pulls the referenced variable from the database
             self.__local_store.set_record(record_name, expr)
         elif self.__global_store.read_record(record_name):
-            if self.get_current_principal().has_permission(record_name, Permission.WRITE):
+            if self.check_permission(record_name, Right.WRITE):
                 if is_ref:
                     expr = self.return_record(expr) # Pulls the referenced variable from the database
                 self.__global_store.set_record(record_name, expr)
@@ -197,8 +210,7 @@ class Database:
             if is_ref:
                 expr = self.return_record(expr) # Pulls the referenced variable from the database
             self.__global_store.set_record(record_name, expr)
-            self.get_current_principal().add_permissions(record_name, ALL_PERMISSIONS)
-            self.__principals["admin"].add_permissions(record_name, ALL_PERMISSIONS)
+            self.__permissions.add_permissions(record_name, "admin", self.get_current_principal().get_username(), ALL_RIGHTS)
 
         return "SET"
 
@@ -226,7 +238,7 @@ class Database:
                 expr = self.return_record(expr)
             self.__local_store.append_record(record_name, expr)
         elif self.__global_store.read_record(record_name):
-            if self.get_current_principal().has_permission(record_name, Permission.WRITE) or self.get_current_principal().has_permission(record_name, Permission.APPEND):
+            if self.check_permission(record_name, Right.WRITE) or self.check_permission(record_name, Right.APPEND):
                 if is_ref:
                     expr = self.return_record(expr)
                 self.__global_store.append_record(record_name, expr)
@@ -287,7 +299,7 @@ class Database:
         if self.__local_store.read_record(record_name):
             self.__local_store.for_each_record(record_name, local_var, expr, is_ref)
         elif self.__global_store.read_record(record_name):
-            if self.get_current_principal().has_permission(record_name, Permission.READ) and self.get_current_principal().has_permission(record_name, Permission.WRITE):
+            if self.check_permission(record_name, Right.READ) and self.check_permission(record_name, Right.WRITE):
                 self.__global_store.for_each_record(record_name, local_var, expr, is_ref)
             else:
                 raise SecurityViolation("principal does not have both read and write permission on record")
@@ -317,7 +329,7 @@ class Database:
         if self.__local_store.read_record(record_name):
             return self.__local_store.read_record(record_name)
         elif self.__global_store.read_record(record_name):
-            if self.get_current_principal().has_permission(record_name, Permission.READ):
+            if self.check_permission(record_name, Right.READ):
                 return self.__global_store.read_record(record_name)
             else:
                 raise SecurityViolation("principal does not have read permission on record")

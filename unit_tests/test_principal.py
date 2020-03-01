@@ -1,4 +1,4 @@
-from build.principal import Principal, Permission, ALL_PERMISSIONS
+from build.principal import Principal
 
 
 class Test_Principal_Authentication:
@@ -39,65 +39,3 @@ class Test_Principal_Change_Password:
         assert p.authenticate("password")
         p.change_password("89279uqhafdsh8gay2378etr8gi^2'4@&")
         assert p.authenticate("89279uqhafdsh8gay2378etr8gi^2'4@&")
-
-
-class Test_Principal_Permissions:
-
-    def test_add_specific_permissions(self):
-        p = Principal("test", "password")
-        p.add_permissions("record1", [Permission.READ])
-        assert p.has_permission("record1", Permission.READ)
-
-        p.add_permissions("record1", [Permission.WRITE])
-        assert p.has_permission("record1", Permission.READ)
-        assert p.has_permission("record1", Permission.WRITE)
-
-        p.add_permissions("record1", [Permission.APPEND])
-        assert p.has_permission("record1", Permission.READ)
-        assert p.has_permission("record1", Permission.WRITE)
-        assert p.has_permission("record1", Permission.APPEND)
-
-    def test_add_multiple_permissions(self):
-        p = Principal("test", "password")
-        p.add_permissions("record1", [Permission.READ, Permission.WRITE, Permission.APPEND])
-        assert p.has_permission("record1", Permission.READ)
-        assert p.has_permission("record1", Permission.WRITE)
-        assert p.has_permission("record1", Permission.APPEND)
-
-    def test_add_all_permissions(self):
-        p = Principal("test", "password")
-        p.add_permissions("record1", ALL_PERMISSIONS)
-        assert p.has_permission("record1", Permission.READ)
-        assert p.has_permission("record1", Permission.WRITE)
-        assert p.has_permission("record1", Permission.APPEND)
-        assert p.has_permission("record1", Permission.DELEGATE)
-
-    def test_multiple_records_permissions(self):
-        p = Principal("test", "password")
-        p.add_permissions("record1", [Permission.READ])
-        p.add_permissions("record2", [Permission.WRITE])
-
-        assert p.has_permission("record2", Permission.WRITE)
-        assert p.has_permission("record1", Permission.READ)
-
-    def test_delete_permissions(self):
-        p = Principal("test", "principal")
-        p.add_permissions("record1", ALL_PERMISSIONS)
-        assert p.has_permission("record1", Permission.READ)
-        assert p.has_permission("record1", Permission.WRITE)
-        assert p.has_permission("record1", Permission.APPEND)
-        assert p.has_permission("record1", Permission.DELEGATE)
-
-        p.delete_permission("record1", Permission.DELEGATE)
-
-        assert p.has_permission("record1", Permission.READ)
-        assert p.has_permission("record1", Permission.WRITE)
-        assert p.has_permission("record1", Permission.APPEND)
-        assert not p.has_permission("record1", Permission.DELEGATE)
-
-        p.delete_permission("record1", Permission.READ)
-
-        assert not p.has_permission("record1", Permission.READ)
-        assert p.has_permission("record1", Permission.WRITE)
-        assert p.has_permission("record1", Permission.APPEND)
-        assert not p.has_permission("record1", Permission.DELEGATE)

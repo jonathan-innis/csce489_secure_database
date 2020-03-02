@@ -70,7 +70,11 @@ class Permissions:
             bool: Whether a given user has a permission on the given record
         """
 
-        if principal == "admin" or principal == "anyone":
+        if principal == "admin":
+            return True
+
+        # Checking if the principal anyone has rights on the record with the given right
+        if self.__data.get("anyone", dict()).get(record_name, dict()).get(right, None):
             return True
 
         visited = set()
@@ -93,6 +97,9 @@ class Permissions:
                         q.append(delegator)
                         visited.add(delegator)
         return False
+
+    def return_permission_keys(self, principal):
+        return self.__data.get(principal, dict()).keys()
 
     def delete_permission(self, record_name, from_principal, to_principal, right):
         """

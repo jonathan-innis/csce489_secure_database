@@ -114,8 +114,6 @@ class Database:
         p = Principal(username, password, self.__default_delegator)
         self.__principals[username] = p
 
-        return "CREATE_PRINCIPAL"
-
     def set_principal(self, username, password):
         """
         The function to set the principal by authenticating with the given password.
@@ -165,8 +163,6 @@ class Database:
                 raise PrincipalKeyError("username for principal does not exist in the database")
             self.__principals[username].change_password(password)
 
-        return "CHANGE_PASSWORD"
-
     def check_permission(self, record_name, right):
         """
         The function to check a given right on the current principal
@@ -212,8 +208,6 @@ class Database:
             self.__global_store.set_record(record_name, expr)
             self.__permissions.add_permissions(record_name, "admin", self.get_current_principal().get_username(), ALL_RIGHTS)
 
-        return "SET"
-
     def append_record(self, record_name, expr, is_ref=False):
         """
         The function to append a value to a record with a given record name in the global or local store
@@ -247,8 +241,6 @@ class Database:
         else:
             raise RecordKeyError("record does not exist in the database")
 
-        return "APPEND"
-
     def set_local_record(self, record_name, expr, is_ref=False):
         """
         The function to store a local record with the given record name in the local store
@@ -273,8 +265,6 @@ class Database:
             if is_ref:
                 expr = self.return_record(expr)
             self.__local_store.set_record(record_name, expr)
-
-        return "LOCAL"
 
     def for_each(self, local_var, record_name, expr, is_ref=False):
         """
@@ -304,10 +294,7 @@ class Database:
             else:
                 raise SecurityViolation("principal does not have both read and write permission on record")
         else:
-            raise RecordKeyError("record name does not exist in the database")
-
-        return "FOREACH"
-        
+            raise RecordKeyError("record name does not exist in the database")        
 
     def return_record(self, record_name):
         """
@@ -355,6 +342,7 @@ class Database:
 
         self.check_principal_set()
 
+        self.get_principal(from_principal) #This performs a check to see if the from_principal exists
         self.get_principal(to_principal) #This performs a check to see if the to_principal exists
 
         # If from_principal is not the current principal or not admin, throw an error
@@ -376,7 +364,12 @@ class Database:
                 raise RecordKeyError("record does not exist in the global store")
             self.__permissions.add_permissions(tgt, from_principal, to_principal, right)
 
-        return "SET_DELEGATION" 
+    def delete_delegation(self, tgt, from_principal, to_principal, right):
+
+        self.check_principal_set()
+
+        self.get_principal(from_principal) #This performs a check to see if the from_principal exists
+        self.get_principal(to_principal) #This performs a check to see if the to_principal exists
 
     def exit(self):
         """

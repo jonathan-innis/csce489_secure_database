@@ -336,7 +336,7 @@ class Database:
         else:
             raise RecordKeyError("record does not exist in the database")
 
-    def set_delegation(self, tgt, from_principal, right, to_principal):
+    def set_delegation(self, tgt, from_principal, to_principal, right):
         """
         The function to delegate a given right from a principal to another principal on a target
 
@@ -358,23 +358,23 @@ class Database:
         self.get_principal(to_principal) #This performs a check to see if the to_principal exists
 
         # If from_principal is not the current principal or not admin, throw an error
-        if from_principal != self.get_current_principal().username and self.get_current_principal() != "admin":
-            raise SecurityViolation("principal specified does not have permissions to delegate")
+        if from_principal != self.get_current_principal().get_username() and self.get_current_principal() != "admin":
+            raise SecurityViolation("principal specified is not current principal or admin")
         
         # Iterates through the elements that a user has delegate rights on
         if tgt == 'all':
             from_rights = self.__permissions.return_permission_keys(from_principal)
+            print(from_rights)
             for elem in from_rights:
-                if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE):
-                    if self.__global_store.read_record(elem):
-                        self.__permissions.add_permissions(elem, from_principal, to_principal, right)
+                # Checking whether the principal has delegate permission on object and element exists in global store
+                if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem):
+                    self.__permissions.add_permissions(elem, from_principal, to_principal, right)
         else:
-            if self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
+            if not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
-            if self.__global_store.read_record(elem):
-                self.__permissions.add_permissions(tgt, from_principal, to_principal, right)
-            else:
+            elif not self.__global_store.read_record(tgt):
                 raise RecordKeyError("record does not exist in the global store")
+            self.__permissions.add_permissions(tgt, from_principal, to_principal, right)
 
         return "SET_DELEGATION" 
 

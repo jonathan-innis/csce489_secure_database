@@ -13,7 +13,7 @@ class Right(Enum):
     DELEGATE = 4
 
 
-ALL_RIGHTS = (Right.WRITE, Right.READ, Right.APPEND, Right.DELEGATE)
+ALL_RIGHTS = [Right.WRITE, Right.READ, Right.APPEND, Right.DELEGATE]
 
 
 class Permissions:
@@ -48,10 +48,18 @@ class Permissions:
             self.__data[to_principal] = dict()
         if record_name not in self.__data[to_principal]:
             self.__data[to_principal][record_name] = dict()
-        for right in rights:
-            if right not in self.__data[to_principal][record_name]:
-                self.__data[to_principal][record_name][right] = set()
-            self.__data[to_principal][record_name][right].add(from_principal)
+        
+        if isinstance(rights, list):
+            for right in rights:
+                if right not in self.__data[to_principal][record_name]:
+                    self.__data[to_principal][record_name][right] = set()
+                self.__data[to_principal][record_name][right].add(from_principal)
+        elif isinstance(rights, Right):
+            if rights not in self.__data[to_principal][record_name]:
+                self.__data[to_principal][record_name][rights] = set()
+            self.__data[to_principal][record_name][rights].add(from_principal)
+        else:
+            raise PermissionsKeyError("right type does not exist")
 
     def check_permission(self, record_name, principal, right):
         """

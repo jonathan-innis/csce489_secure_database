@@ -99,6 +99,9 @@ class Permissions:
         return False
 
     def return_permission_keys(self, principal):
+        """
+        Return all records which the principal has any right on
+        """
         return self.__data.get(principal, dict()).keys()
 
     def delete_permission(self, record_name, from_principal, to_principal, right):
@@ -119,3 +122,11 @@ class Permissions:
         if right not in self.__data[to_principal][record_name]:
             return
         self.__data[to_principal][record_name][right].discard(from_principal)
+
+        # Removing permissions from the system if the elements of the permissions object is empty
+        if len(self.__data[to_principal][record_name][right]) == 0:
+            del self.__data[to_principal][record_name][right]
+        if len(self.__data[to_principal][record_name]) == 0:
+            del self.__data[to_principal][record_name]
+        if len(self.__data[to_principal]) == 0:
+            del self.__data[to_principal]

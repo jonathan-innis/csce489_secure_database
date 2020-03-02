@@ -110,3 +110,17 @@ class Test_Delete_Permission:
         p.add_permissions("x", "admin", "alice", [Right.READ])
 
         p.delete_permission("x", "bob", "dave", Right.READ)
+
+class Test_Return_Permission_Keys:
+
+    def test_num_permission_keys(self):
+        p = Permissions()
+
+        p.add_permissions("x", "admin", "alice", [Right.READ])
+
+        assert 1 == len(p.return_permission_keys("alice"))
+        assert "x" in p.return_permission_keys("alice")
+
+        p.delete_permission("x", "admin", "alice", Right.READ)
+
+        assert 0 == len(p.return_permission_keys("alice"))

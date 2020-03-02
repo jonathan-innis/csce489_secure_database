@@ -1,5 +1,5 @@
 import sys
-from lark import Lark, tree
+from lark import Lark, tree, Transformer
 
 # TODO: replace WORD instances with proper regex definition
 
@@ -12,7 +12,6 @@ start:    prog
         | prim_cmd
         |tgt
         | right
-
 
 prog: "as principal " p " password " pwd
 p: WORD     
@@ -47,20 +46,29 @@ right: "read"
 q: WORD
 
 %import common.WORD
+%import common.WS
+%ignore WS
 """
+
+
+# class T(Transformer):
+#     def PROG(self, p, pwd):
+#         Database.create_principal(p, pwd)
 
 
 def main():
     parser = Lark(GRAMMAR)
-    print(parser.parse("as principal pal password key"))
-    print(parser.parse("exit"))  # test cmd
-    print(parser.parse("create principal prince"))  # test prim cmd
-    print(parser.parse("return x = hello"))  # test cmd
-    print(parser.parse("set x = goodbye"))
-    print(parser.parse("append to x with world"))
+    text = "as principal pal password key"
+    print(parser.parse(text).pretty())
+    # print(parser.parse("exit").pretty())  # test cmd
+    # print(parser.parse("create principal prince").pretty())  # test prim cmd
+    # print(parser.parse("return x = hello").pretty())  # test cmd
+    # print(parser.parse("set x = goodbye").pretty())
+    # print(parser.parse("append to x with world").pretty())
+
+    # tree = parser.parse("as principal pal password key")
+    # print(EvaluateTree().transform(tree))
 
 
 if __name__ == '__main__':
     main()
-
-

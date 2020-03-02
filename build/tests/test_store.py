@@ -1,4 +1,4 @@
-from build.store import Store
+from ..store import Store
 
 
 class Test_Set_Record:

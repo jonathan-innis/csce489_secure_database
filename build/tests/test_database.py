@@ -1,4 +1,4 @@
-from build.database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
+from ..database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
 import pytest
 
 

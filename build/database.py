@@ -1,5 +1,5 @@
-from build.store import Store
-from build.principal import Principal, Permission, ALL_PERMISSIONS
+from .store import Store
+from .principal import Principal, Permission, ALL_PERMISSIONS
 
 
 class PrincipalKeyError(Exception):

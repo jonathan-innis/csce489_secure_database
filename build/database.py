@@ -1,5 +1,5 @@
-from build.store import Store
-from build.principal import Principal, Permission, ALL_PERMISSIONS
+from .store import Store
+from .principal import Principal, Permission, ALL_PERMISSIONS
 
 
 class PrincipalKeyError(Exception):
@@ -210,6 +210,8 @@ class Database:
             raise RecordKeyError("record does not exist in the database")
 
         return "APPEND"
+
+        return "SET"
 
     def return_record(self, record_name):
         """

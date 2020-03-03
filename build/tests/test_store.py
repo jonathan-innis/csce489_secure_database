@@ -1,4 +1,4 @@
-from build.store import Store, AppendException
+from ..store import Store
 import pytest
 
 

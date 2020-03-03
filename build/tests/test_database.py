@@ -1,4 +1,4 @@
-from build.database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
+from ..database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
 import pytest
 
 
@@ -170,17 +170,17 @@ class Test_Set_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
     def test_set_old_global_record(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
-        d.set_record("x", ["first_elem", "second_elem"])
+        assert d.set_record("x", ["first_elem", "second_elem"]) == "SET"
         ret = d.return_record("x")
         assert ret[0] == "first_elem" and ret[1] == "second_elem"
 
@@ -189,7 +189,7 @@ class Test_Set_Record:
         d.set_principal("admin", "test")
         d.create_principal("user1", "password")
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
         d.set_principal("user1", "password")
@@ -203,7 +203,7 @@ class Test_Set_Record:
         d.set_principal("admin", "test")
         d.create_principal("user1", "password")
 
-        d.set_record("x", "this is a record")
+        assert d.set_record("x", "this is a record") == "SET"
         assert d.return_record("x") == "this is a record"
 
         d.set_principal("user1", "password")

@@ -1,4 +1,4 @@
-from build.principal import Principal
+from ..principal import Principal
 
 
 class Test_Principal_Authentication:

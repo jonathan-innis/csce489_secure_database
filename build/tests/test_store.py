@@ -1,4 +1,4 @@
-from build.store import Store, AppendException, ForEachException
+from ..store import Store, AppendException, ForEachException
 import pytest
 
 

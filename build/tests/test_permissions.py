@@ -1,4 +1,4 @@
-from build.permissions import Permissions, Right, ALL_RIGHTS
+from ..permissions import Permissions, Right, ALL_RIGHTS
 
 
 class Test_Add_Permissions:

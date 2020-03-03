@@ -13,7 +13,7 @@ class Principal:
         is_admin (bool): Whether the user has admin privileges or not.
     """
 
-    def __init__(self, username, password, admin=False):
+    def __init__(self, username, password, admin=False, accessible=True):
         """
         The constructor for Principal class.
 
@@ -32,6 +32,7 @@ class Principal:
         self.__salt = bcrypt.gensalt()
         self.__password = bcrypt.hashpw(password.encode('utf-8'), self.__salt)
         self.__admin = admin
+        self.__accessible = accessible
 
     def get_username(self):
         """
@@ -63,6 +64,9 @@ class Principal:
         Returns:
             bool: Whether the given password authenticates the user correctly.
         """
+
+        if not self.__accessible:
+            return False
 
         if bcrypt.checkpw(password.encode('utf-8'), self.__password):
             return True

@@ -1,5 +1,5 @@
-from .store import Store
-from .principal import Principal, Permission, ALL_PERMISSIONS
+from db.store import Store
+from db.principal import Principal, Permission, ALL_PERMISSIONS
 
 
 class PrincipalKeyError(Exception):

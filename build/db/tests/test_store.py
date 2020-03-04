@@ -1,4 +1,4 @@
-from ..store import Store
+from db.store import Store, AppendException
 import pytest
 
 

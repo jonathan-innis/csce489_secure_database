@@ -11,6 +11,10 @@ class SecurityViolation(Exception):
     pass
 
 
+class ParseError(Exception):
+    pass
+
+
 class Database:
     """
     This is the class for the database.
@@ -39,7 +43,7 @@ class Database:
 
         self.__principals = {}
         self.__current_principal = None
-        self.__default_delegator = None
+        self.__default_delegator = "anyone"
         self.__local_store = Store()
         self.__global_store = Store()
         self.__permissions = Permissions()
@@ -47,6 +51,8 @@ class Database:
         # Creates the admin
         p = Principal("admin", admin_password, admin=True)
         self.__principals["admin"] = p
+        p = Principal("anyone", "default", admin=False, accessible=False)
+        self.__principals["anyone"] = p
 
     def get_principal(self, username):
         """
@@ -111,10 +117,9 @@ class Database:
             raise PrincipalKeyError("username for principal exists in database")
         if not self.get_current_principal().is_admin():
             raise SecurityViolation("current principal is not admin user")
-        p = Principal(username, password, self.__default_delegator)
+        p = Principal(username, password)
         self.__principals[username] = p
-
-        return "CREATE_PRINCIPAL"
+        self.set_delegation("all", self.__default_delegator, username, ALL_RIGHTS)
 
     def set_principal(self, username, password):
         """
@@ -164,8 +169,6 @@ class Database:
                 raise PrincipalKeyError("username for principal does not exist in the database")
             self.__principals[username].change_password(password)
 
-        return "CHANGE_PASSWORD"
-
     def check_permission(self, record_name, right):
         """
         The function to check a given right on the current principal
@@ -178,14 +181,13 @@ class Database:
 
         return self.__permissions.check_permission(record_name, self.get_current_principal().get_username(), right)
 
-    def set_record(self, record_name, expr, is_ref=False):
+    def set_record(self, record_name, value):
         """
         The function to set a record in either the global store or the local store
 
         Parameters:
             record_name (string): The name of the record
             expr (string | dict | list): The value or reference to be appended to the record
-            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "SET" if execution completes correctly.
@@ -197,32 +199,23 @@ class Database:
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
-            if is_ref:
-                expr = self.return_record(expr) # Pulls the referenced variable from the database
-            self.__local_store.set_record(record_name, expr)
+            self.__local_store.set_record(record_name, value)
         elif self.__global_store.read_record(record_name):
             if self.check_permission(record_name, Right.WRITE):
-                if is_ref:
-                    expr = self.return_record(expr) # Pulls the referenced variable from the database
-                self.__global_store.set_record(record_name, expr)
+                self.__global_store.set_record(record_name, value)
             else:
                 raise SecurityViolation("principal does not have write permission on record")
         else:
-            if is_ref:
-                expr = self.return_record(expr) # Pulls the referenced variable from the database
-            self.__global_store.set_record(record_name, expr)
+            self.__global_store.set_record(record_name, value)
             self.__permissions.add_permissions(record_name, "admin", self.get_current_principal().get_username(), ALL_RIGHTS)
 
-        return "SET"
-
-    def append_record(self, record_name, expr, is_ref=False):
+    def append_record(self, record_name, value):
         """
         The function to append a value to a record with a given record name in the global or local store
 
         Parameters:
             record_name (string): The name of the record
             expr (string | dict | list): The value or reference to be appended to the record
-            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "APPEND" if execution completes correctly.
@@ -235,29 +228,22 @@ class Database:
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
-            if is_ref:
-                expr = self.return_record(expr)
-            self.__local_store.append_record(record_name, expr)
+            self.__local_store.append_record(record_name, value)
         elif self.__global_store.read_record(record_name):
             if self.check_permission(record_name, Right.WRITE) or self.check_permission(record_name, Right.APPEND):
-                if is_ref:
-                    expr = self.return_record(expr)
-                self.__global_store.append_record(record_name, expr)
+                self.__global_store.append_record(record_name, value)
             else:
                 raise SecurityViolation("principal does not have write permission or append permission on record")
         else:
             raise RecordKeyError("record does not exist in the database")
 
-        return "APPEND"
-
-    def set_local_record(self, record_name, expr, is_ref=False):
+    def set_local_record(self, record_name, value):
         """
         The function to store a local record with the given record name in the local store
 
         Parameters:
             record_name (string): The name of the record
             expr (string | dict | list): The value or reference to be appended to the record
-            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "LOCAL" if execution completes correctly.
@@ -271,44 +257,7 @@ class Database:
         if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
             raise RecordKeyError("record name already exits in the database")
         else:
-            if is_ref:
-                expr = self.return_record(expr)
-            self.__local_store.set_record(record_name, expr)
-
-        return "LOCAL"
-
-    def for_each(self, local_var, record_name, expr, is_ref=False):
-        """
-        The function to iterate over a given record with a local variable and evaluate each part of the list
-        wth an expression and then replace that element with the result of that experssion
-
-        Parameters:
-            local_var (string): The name of the local variable
-            record_name (string): The name of the record
-            expr (function): The function to execute on each part of the record
-
-        Errors:
-            RecordKeyError(): The local variable name already exists in the database or the record_name does not exist in the database
-            SecurityVioloation(): The principal does not have permissions to both read and write the record
-        """
-
-        self.check_principal_set()
-
-        if self.__local_store.read_record(local_var) or self.__global_store.read_record(local_var):
-            raise RecordKeyError("local variable name already exists in the database")
-
-        if self.__local_store.read_record(record_name):
-            self.__local_store.for_each_record(record_name, local_var, expr, is_ref)
-        elif self.__global_store.read_record(record_name):
-            if self.check_permission(record_name, Right.READ) and self.check_permission(record_name, Right.WRITE):
-                self.__global_store.for_each_record(record_name, local_var, expr, is_ref)
-            else:
-                raise SecurityViolation("principal does not have both read and write permission on record")
-        else:
-            raise RecordKeyError("record name does not exist in the database")
-
-        return "FOREACH"
-        
+            self.__local_store.set_record(record_name, value)
 
     def return_record(self, record_name):
         """
@@ -356,28 +305,64 @@ class Database:
 
         self.check_principal_set()
 
+        self.get_principal(from_principal) #This performs a check to see if the from_principal exists
         self.get_principal(to_principal) #This performs a check to see if the to_principal exists
 
-        # If from_principal is not the current principal or not admin, throw an error
-        if from_principal != self.get_current_principal().get_username() and self.get_current_principal() != "admin":
+        # If current principal is not from_principal or admin, throw an error
+        curr_username = self.get_current_principal().get_username()
+        if from_principal != curr_username and curr_username != "admin":
             raise SecurityViolation("principal specified is not current principal or admin")
         
         # Iterates through the elements that a user has delegate rights on
         if tgt == 'all':
             from_rights = self.__permissions.return_permission_keys(from_principal)
-            print(from_rights)
             for elem in from_rights:
                 # Checking whether the principal has delegate permission on object and element exists in global store
                 if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem):
                     self.__permissions.add_permissions(elem, from_principal, to_principal, right)
         else:
-            if not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
+            # Checking whether if the current user is not an admin user, if the from principal has delegate permissions
+            if curr_username != "admin" and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
             elif not self.__global_store.read_record(tgt):
                 raise RecordKeyError("record does not exist in the global store")
             self.__permissions.add_permissions(tgt, from_principal, to_principal, right)
 
-        return "SET_DELEGATION" 
+    def delete_delegation(self, tgt, from_principal, to_principal, right):
+
+        self.check_principal_set()
+
+        self.get_principal(from_principal) #This performs a check to see if the from_principal exists
+        self.get_principal(to_principal) #This performs a check to see if the to_principal exists
+
+        # If current principal is not from_principal, to_principal, or admin, throw error
+        curr_username = self.get_current_principal().get_username()
+        if curr_username != from_principal and curr_username != to_principal and curr_username != "admin":
+            raise SecurityViolation("principal specified is not current principal or admin")
+
+        # Iterates through the elements that a user has delegate rights on
+        if tgt == 'all':
+            from_rights = self.__permissions.return_permission_keys(from_principal)
+            for elem in from_rights:
+                # Checking whether the principal has delegate permission on object and element exists in global store
+                if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem):
+                    self.__permissions.delete_permission(elem, from_principal, to_principal, right)
+        else:
+            if curr_username != "admin" and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
+                raise SecurityViolation("principal specified does not have permissions to delegate")
+            elif not self.__global_store.read_record(tgt):
+                raise RecordKeyError("record does not exist in the global store")
+            self.__permissions.delete_permission(tgt, from_principal, to_principal, right)
+
+    def set_default_delegator(self, username):
+
+        self.check_principal_set()
+
+        if username not in self.__principals:
+            raise PrincipalKeyError("username for principal does not exist in database")
+        if not self.get_current_principal().is_admin():
+            raise SecurityViolation("current principal is not admin user")
+        self.__default_delegator = username
 
     def exit(self):
         """

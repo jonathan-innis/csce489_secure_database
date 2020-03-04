@@ -1,6 +1,6 @@
-from build.store import Store, RecordKeyError
-from build.principal import Principal
-from build.permissions import Permissions, Right, ALL_RIGHTS
+from db.store import Store, RecordKeyError
+from db.principal import Principal
+from db.permissions import Permissions, Right, ALL_RIGHTS
 
 
 class PrincipalKeyError(Exception):

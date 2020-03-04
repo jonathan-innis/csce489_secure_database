@@ -1,5 +1,5 @@
-from build.database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
-from build.permissions import Right, ALL_RIGHTS
+from db.database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
+from db.permissions import Right, ALL_RIGHTS
 import pytest
 
 

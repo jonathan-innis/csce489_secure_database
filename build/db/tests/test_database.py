@@ -1,4 +1,4 @@
-from ..database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
+from db.database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
 import pytest
 
 
@@ -159,6 +159,13 @@ class Test_Change_Password:
 
 class Test_Set_Record:
 
+    def test_current_principal_not_set(self):
+        d = Database("test")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_record("x", "this is a record")
+        assert "current principal is not set" in str(excinfo.value)
+
     def test_set_new_global_record(self):
         d = Database("test")
         d.set_principal("admin", "test")
@@ -212,3 +219,104 @@ class Test_Set_Record:
         with pytest.raises(RecordKeyError) as excinfo:
             d.return_record("x")
         assert "record does not exist in the database" in str(excinfo.value)
+
+
+class Test_Append_Record:
+
+    def test_current_principal_not_set(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+        d.set_record("x", ["record"])
+        d.exit()
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.append_record("x", "this is a record")
+        assert "current principal is not set" in str(excinfo.value)
+
+    def test_append_string_global_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_record("x", ["one"])
+        record = d.return_record("x")
+        assert len(record) == 1
+        assert record[0] == "one"
+
+        d.append_record("x", "two")
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "one"
+        assert record[1] == "two"
+
+    def test_append_dict_global_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_record("x", ["one"])
+        record = d.return_record("x")
+        assert len(record) == 1
+        assert record[0] == "one"
+
+        d.append_record("x", {"another": ["record"]})
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "one"
+
+        assert "another" in record[1]
+        assert len(record[1]["another"]) == 1
+        assert record[1]["another"][0] == "record"
+
+    def test_append_list_global_record(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_record("x", ["one"])
+        record = d.return_record("x")
+        assert len(record) == 1
+        assert record[0] == "one"
+
+        d.append_record("x", ["two", "three", "four"])
+        record = d.return_record("x")
+        assert len(record) == 4
+        assert record[0] == "one"
+        assert record[1] == "two"
+        assert record[2] == "three"
+        assert record[3] == "four"
+
+    def test_append_no_permissions(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_record("x", ["one", "two"])
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "one"
+        assert record[1] == "two"
+
+        d.create_principal("user1", "password")
+        d.set_principal("user1", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.append_record("x", "three")
+        assert "principal does not have write permission or append permission on record" in str(excinfo.value)
+
+    def test_append_no_exist(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.append_record("x", "record")
+        assert "record does not exist in the database" in str(excinfo.value)
+
+
+class Test_Exit:
+
+    def test_exit(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+        assert d.get_current_principal().get_username() == "admin"
+
+        d.exit()
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.get_current_principal()
+        assert "current principal is not set" in str(excinfo.value)

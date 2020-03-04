@@ -8,7 +8,7 @@ pip install pytest
 ```
 Unit tests must completely pass for code to be merged in. Tests can be run with the following from the root directory:
 ```
-pytest
+pytest build/
 ```
 
 ## Linter

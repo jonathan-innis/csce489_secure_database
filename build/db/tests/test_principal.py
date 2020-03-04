@@ -1,4 +1,4 @@
-from build.principal import Principal, Permission, ALL_PERMISSIONS
+from db.principal import Principal, Permission, ALL_PERMISSIONS
 
 
 class Test_Principal_Authentication:

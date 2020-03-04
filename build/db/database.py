@@ -1,5 +1,5 @@
-from build.store import Store
-from build.principal import Principal, Permission, ALL_PERMISSIONS
+from db.store import Store
+from db.principal import Principal, Permission, ALL_PERMISSIONS
 
 
 class PrincipalKeyError(Exception):
@@ -227,30 +227,6 @@ class Database:
             raise RecordKeyError("record does not exist in the database")
 
         return "APPEND"
-
-    def set_local_record(self, record_name, value):
-        """
-        The function to store a local record with the given record name in the local store
-
-        Parameters:
-            record_name (string): The name of the record
-            value (string | dict | list): The value associated with the record
-
-        Returns:
-            string: Returns "LOCAL" if execution completes correctly.
-
-        Errors:
-            RecordKeyError(): If the given record name already exists in the local or global store
-        """
-
-        self.check_principal_set()
-
-        if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
-            raise RecordKeyError("record name already exits in the database")
-        else:
-            self.__local_store.set_record(record_name, value)
-
-        return "LOCAL"
 
     def return_record(self, record_name):
         """

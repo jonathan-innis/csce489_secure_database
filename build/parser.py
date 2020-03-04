@@ -16,26 +16,26 @@ start:    prog
         |tgt
         | right
 
-prog:       "as principal " p " password " pwd  -> prog
+prog:       "as principal " p " password " pwd          -> prog_call
 
-cmd:        "exit"                              -> exit
+cmd:        "exit"                                      -> exit_call                    
             | "return " expr 
             | prim_cmd
             
-expr:       value 
+expr:       value                                                    
             | "[]"
             | fieldvals
             
 fieldvals:  "x = " value
             | "x = " value "," fieldvals
             
-value:      x 
+value:      x                                                                                             
             | x "." y
             | s
             
 prim_cmd:   "create principal " p
             | "change password " pwd
-            | "set x = " expr
+            | "set " x " = " expr                       -> set_call
             | "append to x with " expr
             | "local x = " expr
             | "foreach y in x replacewith " expr
@@ -55,8 +55,8 @@ p: WORD
 pwd: WORD
 q: WORD
 s: WORD
-x: /[A-Za-z][A-Za-z0-9]/
-y: /[A-Za-z][A-Za-z0-9]/
+x: WORD
+y: WORD
 
 %import common.WORD
 %import common.WS
@@ -70,23 +70,30 @@ class T(Transformer):
         self.d = Database('pass')
         self.d.set_principal('admin', 'pass')
 
-    def prog(self, args):
+    def prog_call(self, args):
         p = str(args[0].children[0])
         pwd = str(args[1].children[0])
         self.d.create_principal(p, pwd)
         print("prog calls create_principal")
 
-    def exit(self, args):
+    def exit_call(self, args):
         print("EXITING")
 
-    def value(self, args):
-        print("value")
+    def value_call(self, args):
+        print("value call")
 
+    def x_call(self, args):
+        val = str(args[0].children[0])
+        # self.d.return_record(x)
 
+    def set_call(self, args):
+        key = str(args[0].children[0])
+        val = str(args[1].children[0].children[0].children[0])
+        self.d.set_record(key, val)
 
 def main():
     parser = Lark(GRAMMAR)
-    text = "as principal pal password key"
+    text = "set var = howdy"
     print(parser.parse(text).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd
@@ -95,7 +102,7 @@ def main():
     # print(parser.parse("append to x with world").pretty())
 
     tree = parser.parse(text)
-    print(tree)
+    # print(tree)
     print(T().transform(tree))
 
 

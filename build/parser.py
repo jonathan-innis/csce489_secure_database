@@ -54,17 +54,18 @@ q: WORD
 """
 
 class T(Transformer):
+
     def __init__(self):
         self.vars = {}
         self.d = Database('pass')
         self.d.set_principal('admin', 'pass')
 
     def prog(self, args):
-        print("prog called")
-        p = str(args[0])
-        pwd = str(args[1])
+        p = args[0].children[0]
+        pwd = args[1].children[0]
         self.d.create_principal(p, pwd)
-        print("prog succeeded ??")
+        print("prog calls create_principal")
+
 
 def main():
     parser = Lark(GRAMMAR)
@@ -77,8 +78,9 @@ def main():
     # print(parser.parse("append to x with world").pretty())
 
     tree = parser.parse("as principal pal password key")
+    tree = parser.parse("exit")
     print(tree)
-    #print(T().transform(tree))
+    print(T().transform(tree))
 
 
 if __name__ == '__main__':

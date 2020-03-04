@@ -1,12 +1,9 @@
 import sys
 from lark import Lark, tree, Transformer
-# from build.database import Database
-# from principal import Principal
-import build
+from database import Database
 
 # TODO: replace WORD instances with proper regex definition
-import build
-from build.database import Database
+
 
 GRAMMAR = """
 start:    prog

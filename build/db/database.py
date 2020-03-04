@@ -198,6 +198,30 @@ class Database:
 
         return "SET"
 
+    def set_local_record(self, record_name, expr, is_ref=False):
+        """
+        The function to store a local record with the given record name in the local store
+        Parameters:
+            record_name (string): The name of the record
+            expr (string | dict | list): The value or reference to be appended to the record
+            is_ref (bool): Whether the element is a literal value or a reference
+        Returns:
+            string: Returns "LOCAL" if execution completes correctly.
+        Errors:
+            RecordKeyError(): If the given record name already exists in the local or global store
+        """
+
+        self.check_principal_set()
+
+        if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
+            raise RecordKeyError("record name already exits in the database")
+        else:
+            if is_ref:
+                expr = self.return_record(expr)
+            self.__local_store.set_record(record_name, expr)
+
+        return "LOCAL"
+
     def append_record(self, record_name, value):
         """
         The function to append a value to a record with a given record name in the global or local store

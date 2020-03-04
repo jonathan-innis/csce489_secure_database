@@ -66,7 +66,7 @@ class Test_Create_Principal:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "password")
         d.set_principal("user1", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -77,7 +77,7 @@ class Test_Create_Principal:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("user1", "test") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "test")
 
         assert "user1" == d.get_principal("user1").get_username()
         assert d.get_principal("user1").authenticate("test")
@@ -86,7 +86,7 @@ class Test_Create_Principal:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("user1", "thisisalongerpassword") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "thisisalongerpassword")
 
         with pytest.raises(PrincipalKeyError) as excinfo:
             d.create_principal("user1", "differentpassword")
@@ -96,8 +96,8 @@ class Test_Create_Principal:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
-        assert d.create_principal("user2", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "password")
+        d.create_principal("user2", "password")
 
 
 class Test_Change_Password:
@@ -114,35 +114,35 @@ class Test_Change_Password:
         d.set_principal("admin", "test")
         assert d.get_principal("admin").authenticate("test")
 
-        assert d.change_password("admin", "newpassword") == "CHANGE_PASSWORD"
+        d.change_password("admin", "newpassword")
         assert d.get_principal("admin").authenticate("newpassword")
 
     def test_admin_change_other_password(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("user1", "otherpassword") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "otherpassword")
         assert d.get_principal("user1").authenticate("otherpassword")
 
-        assert d.change_password("user1", "newpassword") == "CHANGE_PASSWORD"
+        d.change_password("user1", "newpassword")
         assert d.get_principal("user1").authenticate("newpassword")
 
     def test_user_change_user_password(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("user1", "otherpassword") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "otherpassword")
         d.set_principal("user1", "otherpassword")
         assert d.get_principal("user1").authenticate("otherpassword")
 
-        assert d.change_password("user1", "newpassword") == "CHANGE_PASSWORD"
+        d.change_password("user1", "newpassword")
         assert d.get_principal("user1").authenticate("newpassword")
 
     def test_user_change_other_password(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "password")
         d.set_principal("user1", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -171,17 +171,17 @@ class Test_Set_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", "this is a record") == "SET"
+        d.set_record("x", "this is a record")
         assert d.return_record("x") == "this is a record"
 
     def test_set_old_global_record(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", "this is a record") == "SET"
+        d.set_record("x", "this is a record")
         assert d.return_record("x") == "this is a record"
 
-        assert d.set_record("x", ["first_elem", "second_elem"]) == "SET"
+        d.set_record("x", ["first_elem", "second_elem"])
         ret = d.return_record("x")
         assert ret[0] == "first_elem" and ret[1] == "second_elem"
 
@@ -189,18 +189,18 @@ class Test_Set_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_local_record("x", "elem") == "LOCAL"
+        d.set_local_record("x", "elem")
         assert d.return_record("x") == "elem"
 
-        assert d.set_record("x", "new elem") == "SET"
+        d.set_record("x", "new elem")
         assert d.return_record("x") == "new elem"
 
     def test_write_record_no_permissions(self):
         d = Database("test")
         d.set_principal("admin", "test")
-        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "password")
 
-        assert d.set_record("x", "this is a record") == "SET"
+        d.set_record("x", "this is a record")
         assert d.return_record("x") == "this is a record"
 
         d.set_principal("user1", "password")
@@ -212,9 +212,9 @@ class Test_Set_Record:
     def test_read_record_no_permissions(self):
         d = Database("test")
         d.set_principal("admin", "test")
-        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "password")
 
-        assert d.set_record("x", "this is a record") == "SET"
+        d.set_record("x", "this is a record")
         assert d.return_record("x") == "this is a record"
 
         d.set_principal("user1", "password")
@@ -237,7 +237,7 @@ class Test_Append_Record:
     def test_current_principal_not_set(self):
         d = Database("test")
         d.set_principal("admin", "test")
-        assert d.set_record("x", ["record"]) == "SET"
+        d.set_record("x", ["record"])
         d.exit()
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -248,12 +248,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", ["one"]) == "SET"
+        d.set_record("x", ["one"])
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        assert d.append_record("x", "two") == "APPEND"
+        d.append_record("x", "two")
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -263,12 +263,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", ["one"]) == "SET"
+        d.set_record("x", ["one"])
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        assert d.append_record("x", {"another": ["record"]}) == "APPEND"
+        d.append_record("x", {"another": ["record"]})
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -281,12 +281,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", ["one"]) == "SET"
+        d.set_record("x", ["one"])
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        assert d.append_record("x", ["two", "three", "four"]) == "APPEND"
+        d.append_record("x", ["two", "three", "four"])
         record = d.return_record("x")
         assert len(record) == 4
         assert record[0] == "one"
@@ -298,12 +298,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_local_record("x", ["one"]) == "LOCAL"
+        d.set_local_record("x", ["one"])
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        assert d.append_record("x", "two") == "APPEND"
+        d.append_record("x", "two")
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -313,12 +313,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_local_record("x", ["one"]) == "LOCAL"
+        d.set_local_record("x", ["one"])
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        assert d.append_record("x", {"another": ["record"]}) == "APPEND"
+        d.append_record("x", {"another": ["record"]})
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
@@ -331,12 +331,12 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_local_record("x", ["one"]) == "LOCAL"
+        d.set_local_record("x", ["one"])
         record = d.return_record("x")
         assert len(record) == 1
         assert record[0] == "one"
 
-        assert d.append_record("x", ["two", "three", "four"]) == "APPEND"
+        d.append_record("x", ["two", "three", "four"])
         record = d.return_record("x")
         assert len(record) == 4
         assert record[0] == "one"
@@ -348,13 +348,13 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", ["one", "two"]) == "SET"
+        d.set_record("x", ["one", "two"])
         record = d.return_record("x")
         assert len(record) == 2
         assert record[0] == "one"
         assert record[1] == "two"
 
-        assert d.create_principal("user1", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("user1", "password")
         d.set_principal("user1", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -383,14 +383,14 @@ class Test_Local_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_local_record("x", "elem") == "LOCAL"
+        d.set_local_record("x", "elem")
         assert d.return_record("x") == "elem"
 
     def test_add_local_record_duplicate(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_local_record("x", "elem") == "LOCAL"
+        d.set_local_record("x", "elem")
         assert d.return_record("x") == "elem"
 
         with pytest.raises(RecordKeyError) as excinfo:
@@ -401,7 +401,7 @@ class Test_Local_Record:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_local_record("x", "elem") == "LOCAL"
+        d.set_local_record("x", "elem")
         assert d.return_record("x") == "elem"
 
         d.exit()
@@ -411,7 +411,7 @@ class Test_Local_Record:
             d.return_record("x")
         assert "record does not exist in the database" in str(excinfo.value)
 
-        assert d.set_local_record("x", "another elem") == "LOCAL"
+        d.set_local_record("x", "another elem")
         assert d.return_record("x") == "another elem"
 
 
@@ -428,9 +428,9 @@ class Test_For_Each:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}]) == "SET"
+        d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}])
 
-        assert d.for_each("y", "x", "y.name", True) == "FOREACH" == "FOREACH"
+        d.for_each("y", "x", "y.name", True)
 
         record = d.return_record("x")
         assert len(record) == 2
@@ -441,9 +441,9 @@ class Test_For_Each:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}]) == "SET"
+        d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}])
 
-        assert d.for_each("y", "x", "string") == "FOREACH"
+        d.for_each("y", "x", "string")
 
         record = d.return_record("x")
         assert len(record) == 2
@@ -454,9 +454,9 @@ class Test_For_Each:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}]) == "SET"
+        d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}])
 
-        assert d.for_each("y", "x", "y.name.first", True) == "FOREACH"
+        d.for_each("y", "x", "y.name.first", True)
 
         record = d.return_record("x")
         assert len(record) == 2
@@ -467,9 +467,9 @@ class Test_For_Each:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}]) == "SET"
+        d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}])
 
-        assert d.for_each("y", "x", "y.name.first", True) == "FOREACH"
+        d.for_each("y", "x", "y.name.first", True)
 
         record = d.return_record("x")
         assert len(record) == 2
@@ -494,10 +494,10 @@ class Test_Set_Delegate_Permission:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
-        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
 
-        assert d.set_record("x", "element") == "SET"
+        d.set_record("x", "element")
 
         d.set_principal("bob", "password")
 
@@ -507,7 +507,7 @@ class Test_Set_Delegate_Permission:
 
         d.set_principal("admin", "test")
 
-        assert d.set_delegation("x", "admin", "bob", Right.READ) == "SET_DELEGATION"
+        d.set_delegation("x", "admin", "bob", Right.READ)
 
         d.set_principal("bob", "password")
 
@@ -527,18 +527,18 @@ class Test_Set_Delegate_Permission:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
-        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
 
-        assert d.set_record("x", "element") == "SET"
+        d.set_record("x", "element")
 
-        assert d.set_delegation("x", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS)
 
         d.set_principal("bob", "password")
 
         assert d.return_record("x") == "element"
 
-        assert d.set_delegation("x", "bob", "alice", ALL_RIGHTS) == "SET_DELEGATION"
+        d.set_delegation("x", "bob", "alice", ALL_RIGHTS)
 
         d.set_principal("alice", "password")
 
@@ -548,12 +548,14 @@ class Test_Set_Delegate_Permission:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
-        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
 
-        assert d.set_record("x", "element") == "SET"
+        d.set_record("x", "element")
 
-        d.set_delegation("x", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS)
+
+        d.set_principal("alice", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
             d.set_delegation("x", "bob", "alice", ALL_RIGHTS)
@@ -561,27 +563,27 @@ class Test_Set_Delegate_Permission:
 
         d.set_principal("bob", "password")
 
-        d.set_delegation("x", "bob", "alice", ALL_RIGHTS) == "SET_DELEGATION"
+        d.set_delegation("x", "bob", "alice", ALL_RIGHTS)
 
     def test_delegate_all_permissions(self):
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
-        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
-        assert d.create_principal("doug", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
+        d.create_principal("doug", "password")
 
-        assert d.set_record("x", "element") == "SET"
-        assert d.set_record("y", "element") == "SET"
-        assert d.set_record("z", "element") == "SET"
+        d.set_record("x", "element")
+        d.set_record("y", "element")
+        d.set_record("z", "element")
 
-        d.set_delegation("x", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
-        d.set_delegation("y", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
-        d.set_delegation("z", "admin", "bob", Right.READ) == "SET_DELEGATION"
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS)
+        d.set_delegation("y", "admin", "bob", ALL_RIGHTS)
+        d.set_delegation("z", "admin", "bob", Right.READ)
 
         d.set_principal("bob", "password")
 
-        d.set_delegation("all", "bob", "alice", Right.READ) == "SET_DELEGATION"
+        d.set_delegation("all", "bob", "alice", Right.READ)
 
         d.set_principal("alice", "password")
 
@@ -598,7 +600,7 @@ class Test_Set_Delegate_Permission:
 
         d.set_principal("alice", "password")
 
-        d.set_delegation("all", "alice", "doug", Right.READ) == "SET_DELEGATION"
+        d.set_delegation("all", "alice", "doug", Right.READ)
 
         d.set_principal("doug", "password")
 
@@ -616,8 +618,8 @@ class Test_Set_Delegate_Permission:
         d = Database("test")
         d.set_principal("admin", "test")
 
-        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
-        assert d.set_record("x", "element") == "SET"
+        d.create_principal("bob", "password")
+        d.set_record("x", "element")
 
         d.set_principal("bob", "password")
 
@@ -629,12 +631,208 @@ class Test_Set_Delegate_Permission:
         d = Database("test")
         d.set_principal("admin", "test")
         
-        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
+        d.create_principal("bob", "password")
 
         with pytest.raises(RecordKeyError) as excinfo:
             d.set_delegation("x", "admin", "bob", Right.DELEGATE)
         assert "record does not exist in the global store" in str(excinfo.value)
 
+
+class Test_Delete_Delegation:
+
+    def test_current_principal_not_set(self):
+        d = Database("test")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.delete_delegation("x", "admin", "alice", Right.READ)
+        assert "current principal is not set" in str(excinfo.value) 
+
+    def test_from_principal_no_exist(self):
+        d = Database("test")
+
+        d.set_principal("admin", "test")
+
+        with pytest.raises(PrincipalKeyError) as excinfo:
+            d.delete_delegation("x", "admin", "bob", Right.APPEND)
+        assert "username for principal does not exist" in str(excinfo.value)
+
+    def test_to_principal_no_exist(self):
+        d = Database("test")
+
+        d.set_principal("admin", "test")
+
+        with pytest.raises(PrincipalKeyError) as excinfo:
+            d.delete_delegation("x", "bob", "admin", Right.APPEND)
+        assert "username for principal does not exist" in str(excinfo.value)
+
+    def test_delete_delgation_local_var(self):
+        d = Database("test")
+
+        d.set_principal("admin", "test")
+        d.create_principal("bob", "password")
+
+        d.set_local_record("x", "element")
+
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.set_delegation("x", "admin", "bob", Right.READ)
+        assert "record does not exist in the global store" in str(excinfo.value)
+
+    def test_delete_delegation(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.create_principal("bob", "password")
+        d.set_record("x", "element")
+
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS)
+
+        d.delete_delegation("x", "admin", "bob", Right.WRITE)
+
+        d.set_principal("bob", "password")
+
+        assert d.return_record("x") == "element"
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_record("x", "a different element")
+        assert "principal does not have write permission on record" in str(excinfo.value)
+
+    def test_delete_middle_delegation(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
+        d.set_record("x", "element")
+
+        d.set_delegation("x", "admin", "bob", Right.READ)
+
+        d.set_delegation("x", "bob", "alice", Right.READ)
+
+        d.set_principal("alice", "password")
+
+        assert d.return_record("x") == "element"
+
+        d.set_principal("bob", "password")
+
+        assert d.return_record("x") == "element"
+
+        d.delete_delegation("x", "admin", "bob", Right.READ)
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+        d.set_principal("alice", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+    def test_delete_not_admin(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_record("x", "element")
+
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
+
+        d.set_principal("bob", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.delete_delegation("x", "admin", "alice", Right.READ)
+        assert "principal specified is not current principal or admin" in str(excinfo.value)
+
+    def test_delete_no_delegate_permission(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.set_record("x", "element")
+
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
+
+        d.set_delegation("x", "admin", "bob", Right.READ)
+        d.set_delegation("x", "bob", "alice", Right.READ)
+
+        d.set_principal("bob", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.delete_delegation("x", "bob", "alice", Right.READ)
+        assert "principal specified does not have permissions to delegate" in str(excinfo.value)
+
+    def test_delete_admin(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
+
+        d.set_principal("bob", "password")
+        d.set_record("x", "element")
+
+        d.set_delegation("x", "bob", "alice", Right.READ)
+
+        d.set_principal("alice", "password")
+
+        assert d.return_record("x") == "element"
+
+        d.set_principal("admin", "test")
+
+        d.delete_delegation("x", "bob", "alice", Right.READ)
+
+        d.set_principal("alice", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+    def test_delete_all_permissions(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.create_principal("bob", "password")
+        d.create_principal("alice", "password")
+        d.create_principal("doug", "password")
+
+        d.set_record("x", "element")
+        d.set_record("y", "element")
+        d.set_record("z", "element")
+
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS)
+        d.set_delegation("y", "admin", "bob", ALL_RIGHTS)
+        d.set_delegation("z", "admin", "bob", Right.READ)
+
+        d.set_principal("bob", "password")
+
+        d.set_delegation("all", "bob", "alice", Right.READ)
+
+        d.set_principal("alice", "password")
+
+        d.return_record("x") == "element"
+        d.return_record("y") == "element"
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("z")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+        d.set_principal("bob", "password")
+
+        d.delete_delegation("all", "bob", "alice", Right.READ)
+
+        d.set_principal("alice", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("y")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("z")
+        assert "principal does not have read permission on record" in str(excinfo.value)
 
 class Test_Exit:
 

@@ -389,6 +389,7 @@ class Database:
         if tgt == 'all':
             from_rights = self.__permissions.return_permission_keys(from_principal)
             for elem in from_rights:
+                print(elem)
                 # Checking whether the principal has delegate permission on object and element exists in global store
                 if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem):
                     self.__permissions.delete_permission(elem, from_principal, to_principal, right)
@@ -408,8 +409,6 @@ class Database:
         if not self.get_current_principal().is_admin():
             raise SecurityViolation("current principal is not admin user")
         self.__default_delegator = username
-    
-        
 
     def exit(self):
         """

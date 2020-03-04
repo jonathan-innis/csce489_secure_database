@@ -1,4 +1,4 @@
-from db.store import Store, AppendException
+from db.store import Store, AppendException, ForEachException
 import pytest
 
 
@@ -48,6 +48,15 @@ class Test_Set_Record:
         s.set_record("x", value)
 
         assert id(value) != id(s.read_record("x"))
+
+    def test_return_complex(self):
+        s = Store()
+
+        s.set_record("x", {"name": {"first": "Jonathan", "last": "Innis"}, "color": "blue"})
+
+        assert s.read_record("x.name.first") == "Jonathan"
+        assert s.read_record("x.name.color") is None
+        assert s.read_record("x.color") == "blue"
 
 
 class Test_Append_Record:
@@ -99,3 +108,45 @@ class Test_Append_Record:
         with pytest.raises(AppendException) as excinfo:
             s.append_record("x", "appended record")
         assert "unable to append record to non-list object" in str(excinfo.value)
+
+
+class Test_For_Each_Record:
+    
+    def test_string_for_each(self):
+        s = Store()
+        s.set_record("x", ["first", "second", "third"])
+
+        s.for_each_record("x", "y", "y", True)
+        
+        record = s.read_record("x")
+        assert len(record) == 3
+        assert record[0] == "first"
+        assert record[1] == "second"
+        assert record[2] == "third"
+
+    def test_record_for_each(self):
+        s = Store()
+        s.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}])
+
+        s.for_each_record("x", "y", "y.name", True)
+
+        record = s.read_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+
+    def test_fail_eval_to_list(self):
+        s = Store()
+        s.set_record("x", [{"name": ["Jonathan", "Innis"]}, {"name": ["Reuben", "Tadpatri"]}])
+
+        with pytest.raises(ForEachException) as excinfo:
+            s.for_each_record("x", "y", "y.name", True)
+        assert "expression evaluates to list object" in str(excinfo.value)
+
+    def test_fail_list(self):
+        s = Store()
+        s.set_record("x", "element")
+
+        with pytest.raises(ForEachException) as excinfo:
+            s.for_each_record("x", "y", "y", True)
+        assert "unable to iterate through non-list object" in str(excinfo.value)

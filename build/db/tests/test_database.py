@@ -1,4 +1,5 @@
 from db.database import Database, PrincipalKeyError, RecordKeyError, SecurityViolation
+from db.permissions import Right, ALL_RIGHTS
 import pytest
 
 
@@ -412,6 +413,227 @@ class Test_Local_Record:
 
         assert d.set_local_record("x", "another elem") == "LOCAL"
         assert d.return_record("x") == "another elem"
+
+
+class Test_For_Each:
+
+    def test_current_principal_not_set(self):
+        d = Database("test")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.for_each("y", "x", "y.name", True)
+        assert "current principal is not set" in str(excinfo.value) 
+
+    def test_record_for_each(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}]) == "SET"
+
+        assert d.for_each("y", "x", "y.name", True) == "FOREACH" == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+    
+    def test_string_for_each(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": "Jonathan"}, {"name": "Reuben"}]) == "SET"
+
+        assert d.for_each("y", "x", "string") == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "string"
+        assert record[1] == "string"
+
+    def test_multiple_levels(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}]) == "SET"
+
+        assert d.for_each("y", "x", "y.name.first", True) == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+
+    def test_record_deleted(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.set_record("x", [{"name": {"first": "Jonathan"}}, {"name": {"first": "Reuben"}}]) == "SET"
+
+        assert d.for_each("y", "x", "y.name.first", True) == "FOREACH"
+
+        record = d.return_record("x")
+        assert len(record) == 2
+        assert record[0] == "Jonathan"
+        assert record[1] == "Reuben"
+
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.return_record("y")
+        assert "record does not exist in the database" in str(excinfo.value)
+
+
+class Test_Set_Delegate_Permission:
+
+    def test_current_principal_not_set(self):
+        d = Database("test")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_delegation("x", "admin", "alice", Right.READ)
+        assert "current principal is not set" in str(excinfo.value) 
+
+    def test_set_delegation(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
+        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
+
+        assert d.set_record("x", "element") == "SET"
+
+        d.set_principal("bob", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+        d.set_principal("admin", "test")
+
+        assert d.set_delegation("x", "admin", "bob", Right.READ) == "SET_DELEGATION"
+
+        d.set_principal("bob", "password")
+
+        assert d.return_record("x") == "element"
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_delegation("x", "bob", "alice", Right.READ)
+        assert "principal specified does not have permissions to delegate" in str(excinfo.value)
+
+        d.set_principal("alice", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+    def test_transitive_set_delegation(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
+        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
+
+        assert d.set_record("x", "element") == "SET"
+
+        assert d.set_delegation("x", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
+
+        d.set_principal("bob", "password")
+
+        assert d.return_record("x") == "element"
+
+        assert d.set_delegation("x", "bob", "alice", ALL_RIGHTS) == "SET_DELEGATION"
+
+        d.set_principal("alice", "password")
+
+        assert d.return_record("x") == "element"
+
+    def test_from_principal_not_current(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
+        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
+
+        assert d.set_record("x", "element") == "SET"
+
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_delegation("x", "bob", "alice", ALL_RIGHTS)
+        assert "principal specified is not current principal or admin" in str(excinfo.value)
+
+        d.set_principal("bob", "password")
+
+        d.set_delegation("x", "bob", "alice", ALL_RIGHTS) == "SET_DELEGATION"
+
+    def test_delegate_all_permissions(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
+        assert d.create_principal("alice", "password") == "CREATE_PRINCIPAL"
+        assert d.create_principal("doug", "password") == "CREATE_PRINCIPAL"
+
+        assert d.set_record("x", "element") == "SET"
+        assert d.set_record("y", "element") == "SET"
+        assert d.set_record("z", "element") == "SET"
+
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
+        d.set_delegation("y", "admin", "bob", ALL_RIGHTS) == "SET_DELEGATION"
+        d.set_delegation("z", "admin", "bob", Right.READ) == "SET_DELEGATION"
+
+        d.set_principal("bob", "password")
+
+        d.set_delegation("all", "bob", "alice", Right.READ) == "SET_DELEGATION"
+
+        d.set_principal("alice", "password")
+
+        d.return_record("x") == "element"
+        d.return_record("y") == "element"
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("z")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+        d.set_principal("bob", "password")
+
+        d.set_delegation("x", "bob", "alice", Right.DELEGATE)
+
+        d.set_principal("alice", "password")
+
+        d.set_delegation("all", "alice", "doug", Right.READ) == "SET_DELEGATION"
+
+        d.set_principal("doug", "password")
+
+        d.return_record("x") == "element"
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("y")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("z")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+    def test_setting_admin_permission_invalid(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
+        assert d.set_record("x", "element") == "SET"
+
+        d.set_principal("bob", "password")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_delegation("x", "admin", "bob", Right.DELEGATE)
+        assert "principal specified is not current principal or admin" in str(excinfo.value)
+
+    def test_record_not_exist(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+        
+        assert d.create_principal("bob", "password") == "CREATE_PRINCIPAL"
+
+        with pytest.raises(RecordKeyError) as excinfo:
+            d.set_delegation("x", "admin", "bob", Right.DELEGATE)
+        assert "record does not exist in the global store" in str(excinfo.value)
 
 
 class Test_Exit:

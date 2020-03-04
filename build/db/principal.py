@@ -1,20 +1,5 @@
 import bcrypt
 import copy
-from enum import Enum
-
-
-class Permission(Enum):
-    WRITE = 1
-    READ = 2
-    APPEND = 3
-    DELEGATE = 4
-
-
-ALL_PERMISSIONS = (Permission.WRITE, Permission.READ, Permission.APPEND, Permission.DELEGATE)
-
-
-class PermissionsKeyError(Exception):
-    pass
 
 
 class Principal:
@@ -28,14 +13,14 @@ class Principal:
         is_admin (bool): Whether the user has admin privileges or not.
     """
 
-    def __init__(self, username, password, admin=False, default_delegator=None):
+    def __init__(self, username, password, admin=False):
         """
         The constructor for Principal class.
 
-        Paramateers:
+        Paramaters:
             username (string): The username of the principal.
             password (string): The password of the principal.
-            default_delegator (Principal): The default delegator to have rights copied from.
+            admin (bool): Whether the user is an admin or not.
 
         - Sets the username of the principal
         - Generates a new salt for the password and hashes the password with this salt
@@ -47,10 +32,6 @@ class Principal:
         self.__salt = bcrypt.gensalt()
         self.__password = bcrypt.hashpw(password.encode('utf-8'), self.__salt)
         self.__admin = admin
-        self.__permissions = {}
-
-        if default_delegator:
-            self.__permissions = copy.deepcopy(default_delegator.get_permissions())
 
     def get_username(self):
         """
@@ -71,16 +52,6 @@ class Principal:
         """
 
         return self.__admin
-
-    def get_permissions(self):
-        """
-        The getter function for permissions.
-
-        Returns:
-            dict({string: set(Permission)}): List of user's permissions
-        """
-
-        return self.__permissions
 
     def authenticate(self, password):
         """
@@ -108,44 +79,3 @@ class Principal:
 
         self.__salt = bcrypt.gensalt()
         self.__password = bcrypt.hashpw(new_password.encode('utf-8'), self.__salt)
-
-    def add_permissions(self, record_name, permissions):
-        """
-        The function to add the given permissions to the record with the
-        given record name
-
-        Parameters:
-            record_name (string): The name of the record
-            permissions ([Permission]): A list of permissions
-        """
-
-        principal_permissions = self.__permissions.get(record_name, set())
-        for permission in permissions:
-            principal_permissions.add(permission)
-        self.__permissions[record_name] = principal_permissions
-
-    def has_permission(self, record_name, permission):
-        """
-        The function to check if a user has the given permission on the
-        given record with the record name
-
-        Parameters:
-            record_name (string): The name of the record
-            permission (Permission): The type of the permission
-
-        Returns:
-            bool: If the user has given permission on the record
-        """
-
-        return permission in self.__permissions.get(record_name, set())
-
-    def delete_permission(self, record_name, permission):
-        """
-        The function to delete a permission from a given record
-
-        Paramaters:
-            record_name (string): The name of the record
-            permission (Permission): The type of the permission
-        """
-
-        self.__permissions[record_name].discard(permission)

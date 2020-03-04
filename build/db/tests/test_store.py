@@ -70,7 +70,7 @@ class Test_Append_Record:
 
         s.append_record("x", {"another": "elem"})
         record = s.read_record("x")
-        
+
         assert len(record) == 3
         assert record[0] == "first"
         assert record[1] == "second"

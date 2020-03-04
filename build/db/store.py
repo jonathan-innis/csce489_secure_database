@@ -33,7 +33,7 @@ class Store:
         Parameters:
             record_name (string): The name of the record
             value (string | dict | list): The value to be appended to the record
-        
+
         Errors:
             AppendException(): If the value associated with the record name is not a list
         """
@@ -46,7 +46,7 @@ class Store:
                 record += value
             else:
                 record.append(value)
-        self.__store[record_name] = record        
+        self.__store[record_name] = record
 
     def read_record(self, record_name):
         """

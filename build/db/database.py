@@ -71,7 +71,7 @@ class Database:
         """
         The function to return the current principal from the database.
 
-        Paramaters:
+        Returns:
             Principal: Returns the current principal from the database
 
         Errors:
@@ -80,6 +80,15 @@ class Database:
         if not self.__current_principal:
             raise SecurityViolation("current principal is not set")
         return self.__current_principal
+
+    def check_principal_set(self):
+        """
+        The function is an alias to get_current_principal()
+
+        Errors:
+            SecurityViolation(): If the current principal is not set
+        """
+        self.get_current_principal()
 
     def create_principal(self, username, password):
         """
@@ -96,6 +105,8 @@ class Database:
             PrincipalKeyError(): If username already exists in the database
             SecurityViolation(): If current principal creating user isn't admin
         """
+
+        self.check_principal_set()
 
         if username in self.__principals:
             raise PrincipalKeyError("username for principal exists in database")
@@ -142,6 +153,8 @@ class Database:
             PrincipalKeyError(): If the username specified does not exist in the database.
         """
 
+        self.check_principal_set()
+
         if username != self.get_current_principal().get_username() and not self.get_current_principal().is_admin():
             raise SecurityViolation("cannot change password of another principal without admin privileges")
 
@@ -170,6 +183,8 @@ class Database:
             SecurityViolation(): The current principal does not have write permission on an already existing record
         """
 
+        self.check_principal_set()
+
         if self.__local_store.read_record(record_name):
             self.__local_store.set_record(record_name, value)
         elif self.__global_store.read_record(record_name):
@@ -180,8 +195,32 @@ class Database:
         else:
             self.__global_store.set_record(record_name, value)
             self.get_current_principal().add_permissions(record_name, ALL_PERMISSIONS)
-        
+
         return "SET"
+
+    def set_local_record(self, record_name, expr, is_ref=False):
+        """
+        The function to store a local record with the given record name in the local store
+        Parameters:
+            record_name (string): The name of the record
+            expr (string | dict | list): The value or reference to be appended to the record
+            is_ref (bool): Whether the element is a literal value or a reference
+        Returns:
+            string: Returns "LOCAL" if execution completes correctly.
+        Errors:
+            RecordKeyError(): If the given record name already exists in the local or global store
+        """
+
+        self.check_principal_set()
+
+        if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
+            raise RecordKeyError("record name already exits in the database")
+        else:
+            if is_ref:
+                expr = self.return_record(expr)
+            self.__local_store.set_record(record_name, expr)
+
+        return "LOCAL"
 
     def append_record(self, record_name, value):
         """
@@ -193,11 +232,13 @@ class Database:
 
         Returns:
             string: Returns "APPEND" if execution completes correctly.
-        
+
         Errors:
             SecurityViolation(): If the current principal does not have write or append permission on the given record name
             RecordKeyError(): If the record name does not exist in the local or global store
         """
+
+        self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
             self.__local_store.append_record(record_name, value)
@@ -210,8 +251,6 @@ class Database:
             raise RecordKeyError("record does not exist in the database")
 
         return "APPEND"
-
-        return "SET"
 
     def return_record(self, record_name):
         """
@@ -227,6 +266,8 @@ class Database:
             SecurityViolation(): If the principal does not have write permissions on the record
             RecordKeyError(): If the record does not exist in the database
         """
+
+        self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
             return self.__local_store.read_record(record_name)

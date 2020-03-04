@@ -181,14 +181,13 @@ class Database:
 
         return self.__permissions.check_permission(record_name, self.get_current_principal().get_username(), right)
 
-    def set_record(self, record_name, expr, is_ref=False):
+    def set_record(self, record_name, value):
         """
         The function to set a record in either the global store or the local store
 
         Parameters:
             record_name (string): The name of the record
             expr (string | dict | list): The value or reference to be appended to the record
-            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "SET" if execution completes correctly.
@@ -200,30 +199,23 @@ class Database:
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
-            if is_ref:
-                expr = self.return_record(expr) # Pulls the referenced variable from the database
-            self.__local_store.set_record(record_name, expr)
+            self.__local_store.set_record(record_name, value)
         elif self.__global_store.read_record(record_name):
             if self.check_permission(record_name, Right.WRITE):
-                if is_ref:
-                    expr = self.return_record(expr) # Pulls the referenced variable from the database
-                self.__global_store.set_record(record_name, expr)
+                self.__global_store.set_record(record_name, value)
             else:
                 raise SecurityViolation("principal does not have write permission on record")
         else:
-            if is_ref:
-                expr = self.return_record(expr) # Pulls the referenced variable from the database
-            self.__global_store.set_record(record_name, expr)
+            self.__global_store.set_record(record_name, value)
             self.__permissions.add_permissions(record_name, "admin", self.get_current_principal().get_username(), ALL_RIGHTS)
 
-    def append_record(self, record_name, expr, is_ref=False):
+    def append_record(self, record_name, value):
         """
         The function to append a value to a record with a given record name in the global or local store
 
         Parameters:
             record_name (string): The name of the record
             expr (string | dict | list): The value or reference to be appended to the record
-            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "APPEND" if execution completes correctly.
@@ -236,27 +228,22 @@ class Database:
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name):
-            if is_ref:
-                expr = self.return_record(expr)
-            self.__local_store.append_record(record_name, expr)
+            self.__local_store.append_record(record_name, value)
         elif self.__global_store.read_record(record_name):
             if self.check_permission(record_name, Right.WRITE) or self.check_permission(record_name, Right.APPEND):
-                if is_ref:
-                    expr = self.return_record(expr)
-                self.__global_store.append_record(record_name, expr)
+                self.__global_store.append_record(record_name, value)
             else:
                 raise SecurityViolation("principal does not have write permission or append permission on record")
         else:
             raise RecordKeyError("record does not exist in the database")
 
-    def set_local_record(self, record_name, expr, is_ref=False):
+    def set_local_record(self, record_name, value):
         """
         The function to store a local record with the given record name in the local store
 
         Parameters:
             record_name (string): The name of the record
             expr (string | dict | list): The value or reference to be appended to the record
-            is_ref (bool): Whether the element is a literal value or a reference
 
         Returns:
             string: Returns "LOCAL" if execution completes correctly.
@@ -270,9 +257,7 @@ class Database:
         if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
             raise RecordKeyError("record name already exits in the database")
         else:
-            if is_ref:
-                expr = self.return_record(expr)
-            self.__local_store.set_record(record_name, expr)
+            self.__local_store.set_record(record_name, value)
 
     def return_record(self, record_name):
         """

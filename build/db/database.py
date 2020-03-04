@@ -1,6 +1,6 @@
-from .store import Store, RecordKeyError
-from .principal import Principal
-from .permissions import Permissions, Right, ALL_RIGHTS
+from db.store import Store, RecordKeyError
+from db.principal import Principal
+from db.permissions import Permissions, Right, ALL_RIGHTS
 
 
 class PrincipalKeyError(Exception):
@@ -133,7 +133,6 @@ class Database:
             SecurityViolation(): If the username does not exist in the database or the given
                                  username password combination does not authenticate correctly.
         """
-
         if username not in self.__principals:
             raise SecurityViolation("invalid username/password combination for principal")
         p = self.__principals[username]
@@ -178,6 +177,8 @@ class Database:
             raw_record_name (string): The name of the given record
             right (Right): The record to check on the current principal
         """
+        self.check_principal_set()
+
         return self.__permissions.check_permission(record_name, self.get_current_principal().get_username(), right)
 
     def set_record(self, record_name, expr, is_ref=False):
@@ -414,6 +415,7 @@ class Database:
         """
         The function to exit from the database and reset the local variables in the database
         """
+        self.check_principal_set()
 
         self.__current_principal = None
         self.__local_store = Store()

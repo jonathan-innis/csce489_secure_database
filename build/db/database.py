@@ -62,8 +62,6 @@ class Database:
             PrincipalKeyError(): If username is not in the database.
         """
 
-        self.check_principal_set()
-
         if username not in self.__principals:
             raise PrincipalKeyError("username for principal does not exist")
         return self.__principals[username]
@@ -78,9 +76,6 @@ class Database:
         Errors:
             SecurityViolation(): If the current principal is not set
         """
-
-        self.check_principal_set()
-
         if not self.__current_principal:
             raise SecurityViolation("current principal is not set")
         return self.__current_principal
@@ -92,8 +87,6 @@ class Database:
         Errors:
             SecurityViolation(): If the current principal is not set
         """
-        self.check_principal_set()
-
         self.get_current_principal()
 
     def create_principal(self, username, password):
@@ -135,8 +128,6 @@ class Database:
             SecurityViolation(): If the username does not exist in the database or the given
                                  username password combination does not authenticate correctly.
         """
-        self.check_principal_set()
-
         if username not in self.__principals:
             raise SecurityViolation("invalid username/password combination for principal")
         p = self.__principals[username]

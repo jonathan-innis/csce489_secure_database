@@ -768,6 +768,73 @@ class Test_Delete_Delegation:
             d.return_record("z")
         assert "principal does not have read permission on record" in str(excinfo.value)
 
+    def test_delete_to_permission(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+        
+        d.create_principal("bob", "password")
+
+        d.set_record("x", "element")
+
+        d.set_delegation("x", "admin", "bob", Right.READ)
+
+        d.set_principal("bob", "password")
+
+        assert d.return_record("x") == "element"
+
+        d.delete_delegation("x", "admin", "bob", Right.READ)
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("x")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+
+class Test_Default_Delegator:
+
+    def test_current_principal_not_set(self):
+        d = Database("test")
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.set_default_delegator("admin")
+        assert "current principal is not set" in str(excinfo.value)
+
+    def test_username_no_exist(self):
+        d = Database("test")
+
+        d.set_principal("admin", "test")
+        
+        with pytest.raises(PrincipalKeyError) as excinfo:
+            d.set_default_delegator("bob")
+        assert "username for principal does not exist in database" in str(excinfo.value)
+
+    def test_default_delegator_gives_rights(self):
+        d = Database("test")
+        d.set_principal("admin", "test")
+
+        d.create_principal("bob", "password")
+
+        d.set_default_delegator("bob")
+
+        d.set_record("x", "element")
+        d.set_record("y", "element")
+        d.set_record("z", "element")
+
+        d.set_delegation("x", "admin", "bob", ALL_RIGHTS)
+        d.set_delegation("y", "admin", "bob", ALL_RIGHTS)
+        d.set_delegation("z", "admin", "bob", Right.READ)
+
+        d.create_principal("alice", "password")
+
+        d.set_principal("alice", "password")
+
+        d.return_record("x") == "element"
+        d.return_record("y") == "element"
+
+        with pytest.raises(SecurityViolation) as excinfo:
+            d.return_record("z")
+        assert "principal does not have read permission on record" in str(excinfo.value)
+
+
 class Test_Exit:
 
     def test_exit(self):

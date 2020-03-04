@@ -36,9 +36,9 @@ value:      x
 prim_cmd:   "create principal " p
             | "change password " pwd
             | "set " x " = " expr                       -> set_call
-            | "append to x with " expr
-            | "local x = " expr
-            | "foreach y in x replacewith " expr
+            | "append to " x " with " expr
+            | "local " x " = " expr
+            | "foreach " y " in " x " replacewith " expr
             | "set delegation " tgt q right -> p
             | "delete delegation " tgt q right -> p
             | "default delegator = " p
@@ -54,7 +54,7 @@ right:      "read"
 p: WORD     
 pwd: WORD
 q: WORD
-s: WORD
+s: /"WORD"/
 x: WORD
 y: WORD
 

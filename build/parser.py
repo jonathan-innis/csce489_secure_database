@@ -1,7 +1,12 @@
 import sys
 from lark import Lark, tree, Transformer
+# from build.database import Database
+# from principal import Principal
+import build
 
 # TODO: replace WORD instances with proper regex definition
+import build
+from build.database import Database
 
 GRAMMAR = """
 start:    prog
@@ -51,9 +56,9 @@ q: WORD
 """
 
 
-# class T(Transformer):
-#     def PROG(self, p, pwd):
-#         Database.create_principal(p, pwd)
+class T(Transformer):
+    def PROG(self, p, pwd):
+        build.database.create_principal(p, pwd)
 
 
 def main():

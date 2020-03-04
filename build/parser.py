@@ -19,16 +19,16 @@ start:    prog
 prog: "as principal " p " password " pwd -> prog
 p: WORD     
 pwd: WORD
-cmd: "exit"\n
-    | "return " expr\n
-    | prim_cmd\n
-expr: value
+cmd: "exit" -> exit
+    | "return " expr 
+    | prim_cmd
+expr: value 
     | "[]"
     | fieldvals
 fieldvals:    "x = " value
             | "x = " value "," fieldvals
-value:    "x"
-        | "x*y"
+value:    x 
+        | x "." y
         | s
 s: WORD
 prim_cmd: "create principal " p
@@ -41,12 +41,14 @@ prim_cmd: "create principal " p
         | "delete delegation " tgt q right -> p
         | "default delegator = " p
 tgt: "all"
-    | "x"
+    | x
 right: "read"
      | "write"
      | "append"
      | "delegate"
 q: WORD
+x: /[A-Za-z][A-Za-z0-9]/
+y: /[A-Za-z][A-Za-z0-9]/
 
 %import common.WORD
 %import common.WS
@@ -66,10 +68,17 @@ class T(Transformer):
         self.d.create_principal(p, pwd)
         print("prog calls create_principal")
 
+    def exit(self, args):
+        print("EXITING")
+
+    def value(self, args):
+        print("value")
+
+
 
 def main():
     parser = Lark(GRAMMAR)
-    text = "as principal pal password key"
+    text = "exit"
     print(parser.parse(text).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd
@@ -77,8 +86,7 @@ def main():
     # print(parser.parse("set x = goodbye").pretty())
     # print(parser.parse("append to x with world").pretty())
 
-    tree = parser.parse("as principal pal password key")
-    tree = parser.parse("exit")
+    tree = parser.parse(text)
     print(tree)
     print(T().transform(tree))
 

@@ -31,11 +31,11 @@ fieldvals:  "x = " value
             
 value:      x                                                                                             
             | x "." y
-            | s
+            | s                                                                                  
 
 prim_cmd:   "create principal " p  pwd                      -> create_principal_call
             | "change password " p pwd                      -> change_password_call
-            | "set " x " = " x                              -> set_call
+            | "set " x " = " expr                           -> set_call
             | "append to " x " with " expr
             | "local " x " = " expr
             | "foreach " y " in " x " replacewith " expr
@@ -54,8 +54,8 @@ right:      "read"
 p: WORD     
 pwd: WORD
 q: WORD
-s: /"WORD"/
-x: WORD
+s: /"[A-Za-z0-9_,;\.?!-]*"/
+x: /[A-Za-z][A-Za-z0-9_]*/
 y: WORD
 
 %import common.WORD
@@ -96,10 +96,12 @@ class T(Transformer):
         val = str(args[0].children[0])
         # self.d.return_record(x)
 
+    # strip quotation marks from strings if necessary
     def set_call(self, args):
         print("set_call")
         key = str(args[0].children[0])
         val = str(args[1].children[0].children[0].children[0])
+        val = val.strip('"')
         self.d.set_record(key, val)
 
     def return_call(self, args):
@@ -110,7 +112,7 @@ class T(Transformer):
 
 def main():
     parser = Lark(GRAMMAR)
-    text = "as principal pal password key do exit"
+    text = 'set x = "9"'
     print(parser.parse(text).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd

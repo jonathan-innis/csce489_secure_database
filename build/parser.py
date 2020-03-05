@@ -8,23 +8,23 @@ from db.principal import Principal
 # TODO: fix line 37 38 -> p ???
 
 GRAMMAR = """
-start:    prog 
+start:      auth cmd fin                                    -> start_call
 
-prog:       "as principal " p " password " pwd " do " cmd   -> prog_call 
+auth:       "as principal " p " password " s " do"          -> auth_call 
 
 cmd:        "exit"                                          -> exit_call                    
-            | "return " expr                                -> return_call
-            | prim_cmd
+            | "return " expr                                -> string_call
+            | prim_cmd cmd
             
-expr:       value                                                                             
+expr:       value                                           -> string_call                                                                        
             | fieldvals
             
 fieldvals:  "x = " value
             | "x = " value ", " fieldvals
             
-value:      x                                                                                             
-            | x "." y
-            | s                                                                                  
+value:      x                                               -> return_call                                                                                        
+            | x "." y                                       -> return_dot_call
+            | s                                             -> string_call                                      
 
 prim_cmd:   "create principal " p  pwd                      -> create_principal_call
             | "change password " p pwd                      -> change_password_call
@@ -36,7 +36,7 @@ prim_cmd:   "create principal " p  pwd                      -> create_principal_
             | "foreach " y " in " x " replacewith " expr
             | "set delegation " tgt q right -> p
             | "delete delegation " tgt q right -> p
-            | "default delegator = " p
+            | "default delegator = "
             
 tgt:        "all"
             | x
@@ -46,12 +46,14 @@ right:      "read"
             | "append"
             | "delegate"
 
-p: WORD     
-pwd: WORD
-q: WORD
-s: /"[A-Za-z0-9_,;\.?!-]*"/
-x: /[A-Za-z][A-Za-z0-9_]*/
-y: WORD  
+fin:        "***"
+
+p: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
+pwd: /[A-Za-z][A-Za-z0-9_]*/                                -> string_call
+q: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
+s: /"[A-Za-z0-9_,;\.?!-]*"/                                 -> string_call
+x: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
+y: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
 
 
 %import common.WORD
@@ -61,24 +63,30 @@ y: WORD
 
 class T(Transformer):
 
-    def __init__(self):
+    def __init__(self, d):
         self.vars = {}
-        self.d = Database('pass')
-        self.d.set_principal('admin', 'pass')
+        self.d = d
 
-    def prog_call(self, args):
-        p = str(args[0].children[0])
-        pwd = str(args[1].children[0])
-        # self.d.set_principal(p, pwd)
+    def string_call(self, args):
+        return args[0].strip('"')
+
+    def start_call(self, args):
+        print(args[0])
+        print(args[1])
+
+    def auth_call(self, args):
+        p = str(args[0])
+        pwd = str(args[1])
+        self.d.set_principal(p, pwd)
 
     def create_principal_call(self, args):
-        p = str(args[0].children[0])
-        pwd = str(args[1].children[0])
+        p = str(args[0])
+        pwd = str(args[1])
         self.d.create_principal(p, pwd)
 
     def change_password_call(self, args):
-        p = str(args[0].children[0])
-        pwd = str(args[1].children[0])
+        p = str(args[0])
+        pwd = str(args[1])
         self.d.change_password(p, pwd)
 
     def exit_call(self, args):
@@ -87,28 +95,22 @@ class T(Transformer):
     def value_call(self, args):
         print("value call")
 
-    def x_call(self, args):
-        print("x_call")
-        val = str(args[0].children[0])
-        # self.d.return_record(x)
-
     # strip quotation marks from s strings if necessary
     def set_call(self, args):
         print("set_call")
-        key = str(args[0].children[0])
-        val = str(args[1].children[0].children[0].children[0])
-        val = val.strip('"')
+        key = args[0]
+        val = args[1]
         self.d.set_record(key, val)
 
     def return_call(self, args):
         print("return_call")
-        val = str(args[0].children[0].children[0].children[0])
+        val = str(args[0])
         print(val)
-        # self.d.return_record(val)
+        return self.d.return_record(val)
 
     def list_set_call(self, args):
-        key = str(args[0].children[0])
-        val = str("[]")
+        key = str(args[0])
+        val = []
         self.d.set_record(key, val)
 
     def throw_list_error(self, args):
@@ -116,20 +118,23 @@ class T(Transformer):
 
 def main():
     parser = Lark(GRAMMAR)
-    text1 = "as principal pal password key do "
-    text2 = "set x = []"
-    text = text1 + text2
-    print(text)
-    print(parser.parse(text).pretty())
+    d = Database("test")
+    text1 = 'as principal admin password "test" do set x = "string" return x ***'
+    text2 = 'as principal admin password "test" do return x ***'
+    print(parser.parse(text1).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd
     # print(parser.parse("return x = hello").pretty())  # test cmd
     # print(parser.parse("set x = goodbye").pretty())
     # print(parser.parse("append to x with world").pretty())
 
-    tree = parser.parse(text)
+    tree1 = parser.parse(text1)
     # print(tree)
-    print(T().transform(tree))
+    T(d).transform(tree1)
+
+    tree2 = parser.parse(text2)
+
+    T(d).transform(tree2)
 
 
 if __name__ == '__main__':

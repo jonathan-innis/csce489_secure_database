@@ -8,13 +8,13 @@ from db.principal import Principal
 # TODO: fix line 37 38 -> p ???
 
 GRAMMAR = """
-start:      auth cmd fin                                    -> start_call
+start:      auth EOL cmd EOL fin                            -> start_call
 
 auth:       "as principal " p " password " s " do"          -> auth_call 
 
 cmd:        "exit"                                          -> exit_call                    
             | "return " expr                                -> string_call
-            | prim_cmd cmd
+            | prim_cmd EOL cmd
             
 expr:       value                                           -> string_call                                                                        
             | fieldvals
@@ -48,6 +48,9 @@ right:      "read"
 
 fin:        "***"
 
+EOL : " "* ( NEWLINE | /\f/)
+
+
 p: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
 pwd: /[A-Za-z][A-Za-z0-9_]*/                                -> string_call
 q: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
@@ -55,9 +58,9 @@ s: /"[A-Za-z0-9_,;\.?!-]*"/                                 -> string_call
 x: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
 y: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
 
-
 %import common.WORD
 %import common.WS
+%import common.NEWLINE
 %ignore WS
 """
 
@@ -119,8 +122,7 @@ class T(Transformer):
 def main():
     parser = Lark(GRAMMAR)
     d = Database("test")
-    text1 = 'as principal admin password "test" do set x = "string" return x ***'
-    text2 = 'as principal admin password "test" do return x ***'
+    text1 = 'as principal admin password "test" do \n set x = "string" \n return x \n ***'
     print(parser.parse(text1).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd

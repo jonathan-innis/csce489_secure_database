@@ -3,18 +3,12 @@ from lark import Lark, tree, Transformer
 from database import Database
 from principal import Principal
 
-# TODO: replace WORD instances with proper regex definition
+
+# TODO: prog needs to always be starting command
 # TODO: fix line 37 38 -> p ???
 
 GRAMMAR = """
 start:    prog 
-        | cmd
-        | expr
-        | fieldvals
-        | value
-        | prim_cmd
-        |tgt
-        | right
 
 prog:       "as principal " p " password " pwd " do " cmd   -> prog_call 
 
@@ -22,12 +16,11 @@ cmd:        "exit"                                          -> exit_call
             | "return " expr                                -> return_call
             | prim_cmd
             
-expr:       value                                                    
-            | "[]"
+expr:       value                                                                             
             | fieldvals
             
 fieldvals:  "x = " value
-            | "x = " value "," fieldvals
+            | "x = " value ", " fieldvals
             
 value:      x                                                                                             
             | x "." y
@@ -36,6 +29,8 @@ value:      x
 prim_cmd:   "create principal " p  pwd                      -> create_principal_call
             | "change password " p pwd                      -> change_password_call
             | "set " x " = " expr                           -> set_call
+            | "set " x " = []"                              -> list_set_call
+            | "set " x " = [" x "]"                         -> throw_list_error
             | "append to " x " with " expr
             | "local " x " = " expr
             | "foreach " y " in " x " replacewith " expr
@@ -50,13 +45,14 @@ right:      "read"
             | "write"
             | "append"
             | "delegate"
-     
+
 p: WORD     
 pwd: WORD
 q: WORD
 s: /"[A-Za-z0-9_,;\.?!-]*"/
 x: /[A-Za-z][A-Za-z0-9_]*/
-y: WORD
+y: WORD  
+
 
 %import common.WORD
 %import common.WS
@@ -96,7 +92,7 @@ class T(Transformer):
         val = str(args[0].children[0])
         # self.d.return_record(x)
 
-    # strip quotation marks from strings if necessary
+    # strip quotation marks from s strings if necessary
     def set_call(self, args):
         print("set_call")
         key = str(args[0].children[0])
@@ -106,13 +102,24 @@ class T(Transformer):
 
     def return_call(self, args):
         print("return_call")
-        val = str(args[0].children[0])
+        val = str(args[0].children[0].children[0].children[0])
         print(val)
         # self.d.return_record(val)
 
+    def list_set_call(self, args):
+        key = str(args[0].children[0])
+        val = str("[]")
+        self.d.set_record(key, val)
+
+    def throw_list_error(self, args):
+        print("Error: must initialize empty list before adding items")
+
 def main():
     parser = Lark(GRAMMAR)
-    text = 'set x = "9"'
+    text1 = "as principal pal password key do "
+    text2 = "set x = []"
+    text = text1 + text2
+    print(text)
     print(parser.parse(text).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd

@@ -122,7 +122,8 @@ class T(Transformer):
 def main():
     parser = Lark(GRAMMAR)
     d = Database("test")
-    text1 = 'as principal admin password "test" do \n set x = "string" \n return x \n ***'
+    text1 = 'as principal admin password "test" do \n set x = "string" \n create principal bobby password \n change password bobby newpassword \n return x \n ***'
+    text2 = 'as principal bobby password "newpassword" do \n exit \n ***'
     print(parser.parse(text1).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd

@@ -1,7 +1,7 @@
 import sys
 from lark import Lark, tree, Transformer
-from database import Database
-from principal import Principal
+from db.database import Database
+from db.principal import Principal
 
 
 # TODO: prog needs to always be starting command

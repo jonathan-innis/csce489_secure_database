@@ -16,10 +16,10 @@ start:    prog
         |tgt
         | right
 
-prog:       "as principal " p " password " pwd          -> prog_call
+prog:       "as principal " p " password " pwd " do " cmd   -> prog_call 
 
-cmd:        "exit"                                      -> exit_call                    
-            | "return " expr 
+cmd:        "exit"                                          -> exit_call                    
+            | "return " expr                                -> return_call
             | prim_cmd
             
 expr:       value                                                    
@@ -32,10 +32,10 @@ fieldvals:  "x = " value
 value:      x                                                                                             
             | x "." y
             | s
-            
-prim_cmd:   "create principal " p
-            | "change password " pwd
-            | "set " x " = " expr                       -> set_call
+
+prim_cmd:   "create principal " p  pwd                      -> create_principal_call
+            | "change password " p pwd                      -> change_password_call
+            | "set " x " = " x                              -> set_call
             | "append to " x " with " expr
             | "local " x " = " expr
             | "foreach " y " in " x " replacewith " expr
@@ -73,8 +73,17 @@ class T(Transformer):
     def prog_call(self, args):
         p = str(args[0].children[0])
         pwd = str(args[1].children[0])
+        # self.d.set_principal(p, pwd)
+
+    def create_principal_call(self, args):
+        p = str(args[0].children[0])
+        pwd = str(args[1].children[0])
         self.d.create_principal(p, pwd)
-        print("prog calls create_principal")
+
+    def change_password_call(self, args):
+        p = str(args[0].children[0])
+        pwd = str(args[1].children[0])
+        self.d.change_password(p, pwd)
 
     def exit_call(self, args):
         print("EXITING")
@@ -83,17 +92,25 @@ class T(Transformer):
         print("value call")
 
     def x_call(self, args):
+        print("x_call")
         val = str(args[0].children[0])
         # self.d.return_record(x)
 
     def set_call(self, args):
+        print("set_call")
         key = str(args[0].children[0])
         val = str(args[1].children[0].children[0].children[0])
         self.d.set_record(key, val)
 
+    def return_call(self, args):
+        print("return_call")
+        val = str(args[0].children[0])
+        print(val)
+        # self.d.return_record(val)
+
 def main():
     parser = Lark(GRAMMAR)
-    text = "set var = howdy"
+    text = "as principal pal password key do exit"
     print(parser.parse(text).pretty())
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd

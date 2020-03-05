@@ -8,7 +8,7 @@ from db.principal import Principal
 # TODO: fix line 37 38 -> p ???
 
 GRAMMAR = """
-start:      auth EOL cmd EOL fin                            -> start_call
+start:      auth EOL cmd EOL "***"                            -> start_call
 
 auth:       "as principal " p " password " s " do"          -> auth_call 
 
@@ -45,8 +45,6 @@ right:      "read"
             | "write"
             | "append"
             | "delegate"
-
-fin:        "***"
 
 EOL : " "* ( NEWLINE | /\f/)
 

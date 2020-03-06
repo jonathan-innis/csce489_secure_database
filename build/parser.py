@@ -1,6 +1,7 @@
 import sys
 from lark import Lark, tree, Transformer
 from lark.exceptions import UnexpectedCharacters
+from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
 from db.principal import Principal
 
@@ -32,19 +33,19 @@ prim_cmd:   "create principal " p s                         -> create_principal_
             | "change password " p s                        -> change_password_call
             | "set " x "=" expr                             -> set_call
             | "append to " x " with " expr
-            | "local " x " = " expr
+            | "local " x "=" expr
             | "foreach " y " in " x " replacewith " expr
-            | "set delegation " tgt q right -> p
-            | "delete delegation " tgt q right -> p
-            | "default delegator = " p                      -> default_delegator_call
+            | "set delegation " tgt q right "->" p          -> set_delegation_call
+            | "delete delegation " tgt q right "->" p       -> delete_delegation_call
+            | "default delegator =" p                       -> default_delegator_call
             
 tgt:        "all"
-            | x
+            | x                                             -> val_call
             
-right:      "read"
-            | "write"
-            | "append"
-            | "delegate"
+right:      "read"                                          -> read_call                                          
+            | "write"                                       -> write_call
+            | "append"                                      -> append_call
+            | "delegate"                                    -> delegate_call
 
 EOL : " "* ( NEWLINE | /\f/)
 
@@ -69,9 +70,15 @@ class T(Transformer):
         self.ret = []
 
     def auth_call(self, args):
-        p = str(args[0])
-        pwd = str(args[1])
-        self.d.set_principal(p, pwd)
+        try:
+            p = str(args[0])
+            pwd = str(args[1])
+            self.d.set_principal(p, pwd)
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
 
     def string_call(self, args):
         return str(args[0].strip('"'))
@@ -80,12 +87,24 @@ class T(Transformer):
         return args[0]
 
     def return_val_call(self, args):
-        val = str(args[0])
-        return self.d.return_record(val)
+        try:
+            val = str(args[0])
+            return self.d.return_record(val)
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
 
     def return_dot_call(self, args):
-        val = str(args[0]) + "." + str(args[1])
-        return self.d.return_record(val)
+        try:
+            val = str(args[0]) + "." + str(args[1])
+            return self.d.return_record(val)
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
 
     def end_return_call(self, args):
         self.ret.append({"status": "RETURNING", "output": args[0]})
@@ -94,16 +113,54 @@ class T(Transformer):
         return []
 
     def create_principal_call(self, args):
-        self.d.create_principal(str(args[0]), str(args[1]))
-        self.ret.append({"status": "CREATE_PRINCIPAL"})
+        try:
+            self.d.create_principal(str(args[0]), str(args[1]))
+            self.ret.append({"status": "CREATE_PRINCIPAL"})
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
 
     def change_password_call(self, args):
-        self.d.change_password(str(args[0]), str(args[1]))
-        self.ret.append({"status": "CHANGE_PASSWORD"})
+        try:
+            self.d.change_password(str(args[0]), str(args[1]))
+            self.ret.append({"status": "CHANGE_PASSWORD"})
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
 
     def set_call(self, args):
-        self.d.set_record(args[0], args[1])
-        self.ret.append({"status": "SET"})
+        try:
+            self.d.set_record(args[0], args[1])
+            self.ret.append({"status": "SET"})
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
+
+    def set_delegation_call(self, args):
+        try:
+            self.d.set_delegation(args[0], args[1], args[3], args[2])
+            self.ret.append({"status": "SET_DELEGATION"})
+
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
+
+    def delete_delegation_call(self, args):
+        try:
+            self.d.delete_delegation(args[0], args[1], args[3], args[2])
+            self.ret.append({"status": "DELETE_DELEGATION"})
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
 
     def default_delegator_call(self, args):
         try:
@@ -114,6 +171,18 @@ class T(Transformer):
             raise Exception("denied")
         except Exception as e:
             raise Exception("failed")
+
+    def read_call(self, args):
+        return Right.READ
+
+    def write_call(self, args):
+        return Right.WRITE
+    
+    def append_call(self, args):
+        return Right.APPEND
+
+    def delegate_call(self, args):
+        return Right.DELEGATE
 
     def exit_call(self, args):
         print("EXITING")
@@ -132,6 +201,7 @@ def parse(database, text):
     except UnexpectedCharacters as e:
         return {"status": "FAILED"}
     except Exception as e:
+        print(e)
         if str(e.__context__) == "failed":
             return {"status": "FAILED"}
         elif str(e.__context__) == "denied":
@@ -139,14 +209,15 @@ def parse(database, text):
 
 def main():
     d = Database("test")
-    text1 = 'as principal admin password "test" do \n set x = [] \n create principal bobby "password" \n change password bobby "newpassword" \n return x \n ***'
-    text2 = 'as principal bobby password "newpassword" do \n exit \n ***'
+    text1 = 'as principal admin password "test" do \n set x = [] \n create principal bobby "password" \n change password bobby "newpassword" \n set delegation x admin read-> bobby \n return x \n ***'
+    text2 = 'as principal bobby password "newpassword" do \n return x \n ***'
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd
     # print(parser.parse("return x = hello").pretty())  # test cmd
     # print(parser.parse("set x = goodbye").pretty())
     # print(parser.parse("append to x with world").pretty())
     print(parse(d, text1))
+    print(parse(d, text2))
 
 
 if __name__ == '__main__':

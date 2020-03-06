@@ -274,8 +274,6 @@ class Database:
             RecordKeyError(): If the record does not exist in the database
         """
 
-        print(record_name)
-
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name) is not None:

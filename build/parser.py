@@ -3,7 +3,6 @@ from lark import Lark, tree, Transformer
 from lark.exceptions import UnexpectedCharacters
 from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
-from db.principal import Principal
 
 
 # TODO: prog needs to always be starting command
@@ -39,7 +38,7 @@ prim_cmd:   "create principal " p s                         -> create_principal_
             | "delete delegation " tgt q right "->" p       -> delete_delegation_call
             | "default delegator =" p                       -> default_delegator_call
             
-tgt:        "all"
+tgt:        "all"                                           -> all_call
             | x                                             -> val_call
             
 right:      "read"                                          -> read_call                                          
@@ -186,6 +185,9 @@ class T(Transformer):
     def delegate_call(self, args):
         return Right.DELEGATE
 
+    def all_call(self, args):
+        return "all"
+
     def exit_call(self, args):
         print("EXITING")
 
@@ -193,25 +195,26 @@ class T(Transformer):
 def parse(database, text):
     parser = Lark(GRAMMAR)
 
-    try:
-        tree = parser.parse(text)
-        t = T(database)
-        t.transform(tree)
-        return t.ret
+    # try:
+    tree = parser.parse(text)
+    t = T(database)
+    t.transform(tree)
+    return t.ret
 
     # Catching Exceptions that are by the database and the parser
-    except UnexpectedCharacters as e:
-        print(e)
-        return {"status": "FAILED"}
-    except Exception as e:
-        if str(e.__context__) == "denied":
-            return {"status": "DENIED"}
-        else:
-            return {"status": "FAILED"}
+    # except UnexpectedCharacters as e:
+    #     print(e)
+    #     return {"status": "FAILED"}
+    # except Exception as e:
+    #     print(e)
+    #     if str(e.__context__) == "denied":
+    #         return {"status": "DENIED"}
+    #     else:
+    #         return {"status": "FAILED"}
 
 def main():
     d = Database("test")
-    text1 = 'as principal admin password "test" do \n set x = [] \n create principal bobby "password" \n change password bobby "newpassword" \n set delegation x admin read->bobby \n return x \n ***'
+    text1 = 'as principal admin password "test" do \n set x = [] \n create principal bobby "password" \n change password bobby "newpassword" \n set delegation all admin write->bobby \n return x \n ***'
     text2 = 'as principal bobby password "newpassword" do \n return x \n ***'
     text3 = 'as principal admin password "test" do \n create principal read "password" \n exit \n ***'
     # print(parser.parse("exit").pretty())  # test cmd

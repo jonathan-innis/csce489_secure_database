@@ -48,6 +48,7 @@ right:      "read"                                          -> read_call
             | "delegate"                                    -> delegate_call
 
 EOL : " "* ( NEWLINE | /\f/)
+COMMENT: "//" /(.)+/
 
 
 p: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
@@ -60,6 +61,7 @@ y: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
 %import common.WS
 %import common.NEWLINE
 %ignore WS
+%ignore COMMENT
 """
 
 
@@ -199,18 +201,19 @@ def parse(database, text):
 
     # Catching Exceptions that are by the database and the parser
     except UnexpectedCharacters as e:
+        print(e)
         return {"status": "FAILED"}
     except Exception as e:
-        print(e)
-        if str(e.__context__) == "failed":
-            return {"status": "FAILED"}
-        elif str(e.__context__) == "denied":
+        if str(e.__context__) == "denied":
             return {"status": "DENIED"}
+        else:
+            return {"status": "FAILED"}
 
 def main():
     d = Database("test")
-    text1 = 'as principal admin password "test" do \n set x = [] \n create principal bobby "password" \n change password bobby "newpassword" \n set delegation x admin read-> bobby \n return x \n ***'
+    text1 = 'as principal admin password "test" do \n set x = [] \n create principal bobby "password" \n change password bobby "newpassword" \n set delegation x admin read->bobby \n return x \n ***'
     text2 = 'as principal bobby password "newpassword" do \n return x \n ***'
+    text3 = 'as principal admin password "test" do \n create principal read "password" \n exit \n ***'
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd
     # print(parser.parse("return x = hello").pretty())  # test cmd
@@ -218,6 +221,7 @@ def main():
     # print(parser.parse("append to x with world").pretty())
     print(parse(d, text1))
     print(parse(d, text2))
+    print(parse(d, text3))
 
 
 if __name__ == '__main__':

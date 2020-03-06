@@ -4,32 +4,34 @@ import threading
 import pytest
 
 
-class example_server(socketserver.TCPServer):
-    #nothing here for now?
-    allow_reuse_addresss = True
+class example_server():
+    # nothing here for now?
+    allow_reuse_address = True
+
+    def __init__(self, handler):
+        # allow_reuse_address = True
+        self.server = socketserver.TCPServer(('localhost', 0), handler)
+        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        self.server_thread.start()
+        self.__port = self.server.server_address[1]
+        # self.server.serve_forever()
+
+    def get_port(self):
+        return self.__port
+
+    def stop(self):
+        self.server.shutdown()
+        self.server.server_close()
 
 
 class Test_TCPHandler:
-    """
-    def setUp(self):
-        self.server = example_server(("localhost", 4444), TCPHandler)
-        self.client = socket.create_connection(("localhost", 4444))
-        self.server.serve_forever()
 
-    def tearDown(self):
-        self.client.close()
-        self.server.shutdown()
-        self.server.server_close()
-    """
     def test_data_communication(self):
-        server = example_server(("localhost", 4444), TCPHandler)
-        server.serve_forever()
-        #server_thread = threading.Thread(target=server.serve_forever())
-        #server_thread.start()
-        client = socket.create_connection(("localhost", 4444))
-        client.send('test')
+        server = example_server(TCPHandler)
+        port = server.get_port()
+        client = socket.create_connection(("localhost", port))
+        client.send(b'test')
         result = client.recv(1024)
-        assert result == "Message recieved: test"
+        assert result == b"Message recieved: test\n"
         client.close()
-        server.shutdown()
-        server.server_close()
+        server.stop()

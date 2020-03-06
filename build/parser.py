@@ -51,11 +51,11 @@ EOL : " "* ( NEWLINE | /\f/)
 COMMENT: "//" /(.)+/
 
 
-p: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
-q: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
+p: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
+q: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
 s: /"[A-Za-z0-9_,;\.?!-]*"/                                 -> string_call
-x: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
-y: /[A-Za-z][A-Za-z0-9_]*/                                  -> string_call
+x: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
+y: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
 
 %import common.WORD
 %import common.WS

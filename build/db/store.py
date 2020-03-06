@@ -70,8 +70,6 @@ class Store:
             value (string | dict | list | None): A deepcopy of the original record
         """
 
-        print(self.__store)
-
         record = self.__store
         for elem in record_name.split('.'):
             if elem not in record:

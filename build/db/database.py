@@ -198,9 +198,9 @@ class Database:
 
         self.check_principal_set()
 
-        if self.__local_store.read_record(record_name):
+        if self.__local_store.read_record(record_name) is not None:
             self.__local_store.set_record(record_name, value)
-        elif self.__global_store.read_record(record_name):
+        elif self.__global_store.read_record(record_name) is not None:
             if self.check_permission(record_name, Right.WRITE):
                 self.__global_store.set_record(record_name, value)
             else:
@@ -227,9 +227,9 @@ class Database:
 
         self.check_principal_set()
 
-        if self.__local_store.read_record(record_name):
+        if self.__local_store.read_record(record_name) is not None:
             self.__local_store.append_record(record_name, value)
-        elif self.__global_store.read_record(record_name):
+        elif self.__global_store.read_record(record_name) is not None:
             if self.check_permission(record_name, Right.WRITE) or self.check_permission(record_name, Right.APPEND):
                 self.__global_store.append_record(record_name, value)
             else:
@@ -254,7 +254,7 @@ class Database:
 
         self.check_principal_set()
 
-        if self.__local_store.read_record(record_name) or self.__global_store.read_record(record_name):
+        if self.__local_store.read_record(record_name) is not None or self.__global_store.read_record(record_name) is not None:
             raise RecordKeyError("record name already exits in the database")
         else:
             self.__local_store.set_record(record_name, value)
@@ -274,11 +274,13 @@ class Database:
             RecordKeyError(): If the record does not exist in the database
         """
 
+        print(record_name)
+
         self.check_principal_set()
 
-        if self.__local_store.read_record(record_name):
+        if self.__local_store.read_record(record_name) is not None:
             return self.__local_store.read_record(record_name)
-        elif self.__global_store.read_record(record_name):
+        elif self.__global_store.read_record(record_name) is not None:
             if self.check_permission(record_name, Right.READ):
                 return self.__global_store.read_record(record_name)
             else:
@@ -318,13 +320,13 @@ class Database:
             from_rights = self.__permissions.return_permission_keys(from_principal)
             for elem in from_rights:
                 # Checking whether the principal has delegate permission on object and element exists in global store
-                if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem):
+                if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem) is not None:
                     self.__permissions.add_permissions(elem, from_principal, to_principal, right)
         else:
             # Checking whether if the current user is not an admin user, if the from principal has delegate permissions
             if curr_username != "admin" and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
-            elif not self.__global_store.read_record(tgt):
+            elif self.__global_store.read_record(tgt) is None:
                 raise RecordKeyError("record does not exist in the global store")
             self.__permissions.add_permissions(tgt, from_principal, to_principal, right)
 
@@ -345,12 +347,12 @@ class Database:
             from_rights = self.__permissions.return_permission_keys(from_principal)
             for elem in from_rights:
                 # Checking whether the principal has delegate permission on object and element exists in global store
-                if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem):
+                if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem) is not None:
                     self.__permissions.delete_permission(elem, from_principal, to_principal, right)
         else:
             if curr_username != "admin" and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
-            elif not self.__global_store.read_record(tgt):
+            elif self.__global_store.read_record(tgt) is None:
                 raise RecordKeyError("record does not exist in the global store")
             self.__permissions.delete_permission(tgt, from_principal, to_principal, right)
 

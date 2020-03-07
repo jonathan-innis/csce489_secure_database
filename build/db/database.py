@@ -181,6 +181,14 @@ class Database:
 
         return self.__permissions.check_permission(record_name, self.get_current_principal().get_username(), right)
 
+    def delete_record(self, record_name):
+        self.check_principal_set()
+
+        if self.__local_store.read_record(record_name) is not None:
+            self.__local_store.delete_record(record_name)
+        elif self.__global_store.read_record(record_name) is not None:
+            self.__global_store.delete_record(record_name)
+
     def set_record(self, record_name, value):
         """
         The function to set a record in either the global store or the local store

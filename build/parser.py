@@ -4,63 +4,108 @@ from lark.exceptions import UnexpectedCharacters
 from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
 
-
 # TODO: prog needs to always be starting command
 # TODO: fix line 37 38 -> p ???
 
 GRAMMAR = """
 start:      auth EOL cmd EOL "***"
 
-auth:       "as principal " p " password " s " do"          -> auth_call 
+auth:       "as principal" IDENT "password" S "do"                      -> auth_call 
 
-cmd:        "exit"                                          -> exit_call                    
-            | "return " expr                                -> end_return_call
+cmd:        "exit"                                                      -> exit_call                    
+            | "return " expr                                            -> end_return_call
             | prim_cmd EOL cmd
             
-expr:       value                                           -> val_call
-            | "[]"                                          -> list_call                                                                        
-            | fieldvals
-            
-fieldvals:  x "=" value
-            | x "=" value "," fieldvals
-            
-value:      x                                               -> return_val_call                                                                                        
-            | x "." y                                       -> return_dot_call
-            | s                                             -> string_call                                      
+expr:       value                                                       -> val_call
+            | "[]"                                                      -> list_call                                                                        
+            | dict                                                      -> val_call
 
-prim_cmd:   "create principal " p s                         -> create_principal_call
-            | "change password " p s                        -> change_password_call
-            | "set " x "=" expr                             -> set_call
-            | "append to " x " with " expr
-            | "local " x "=" expr
-            | "foreach " y " in " x " replacewith " expr
-            | "set delegation " tgt q right "->" p          -> set_delegation_call
-            | "delete delegation " tgt q right "->" p       -> delete_delegation_call
-            | "default delegator =" p                       -> default_delegator_call
+dict:       "{" fieldvals "}"                                           -> val_call
+
+fieldvals:  IDENT "=" value                                             -> field_base_call
+            | IDENT "=" value "," fieldvals                             -> field_recur_call
             
-tgt:        "all"                                           -> all_call
-            | x                                             -> val_call
+value:      IDENT                                                       -> return_val_call                                                                                        
+            | IDENT "." IDENT                                           -> return_dot_call
+            | S                                                         -> string_call
+
+prim_cmd:   "create principal" IDENT S                                  -> create_principal_call
+            | "change password" IDENT S                                 -> change_password_call
+            | "set" IDENT "=" expr                                      -> set_call
+            | "append to" IDENT "with" expr                             -> append_call
+            | "local" IDENT "=" expr
+            | "foreach" IDENT "in" IDENT "replacewith" foreach_str      -> foreach_call
+            | "set delegation " TGT IDENT right "->" IDENT              -> set_delegation_call
+            | "delete delegation " TGT IDENT right "->" IDENT           -> delete_delegation_call
+            | "default delegator =" IDENT                               -> default_delegator_call
             
-right:      "read"                                          -> read_call                                          
-            | "write"                                       -> write_call
-            | "append"                                      -> append_call
-            | "delegate"                                    -> delegate_call
+right:      READ                                                        -> read_right_call                                          
+            | WRITE                                                     -> write_right_call
+            | APPEND                                                    -> append_right_call
+            | DELEGATE                                                  -> delegate_right_call
+
+foreach_str:    val_str                                                 -> val_call
+                | "[]"                                                  -> val_call
+                | dict_str                                              -> val_call
+
+dict_str: "{" field_str "}"                                             -> dict_str_call
+
+field_str:  IDENT "=" val_str                                           -> field_str_base_call
+            | IDENT "=" val_str "," field_str                           -> field_str_recur_call
+
+val_str:    IDENT                                                       -> val_call
+            | IDENT "." IDENT                                           -> dot_str_call
+            | S                                                         -> string_call
+
+READ: "read"
+WRITE: "write"
+APPEND: "append"
+DELEGATE: "delegate"
 
 EOL : " "* ( NEWLINE | /\f/)
 COMMENT: "//" /(.)+/
 
-
-p: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
-q: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
-s: /"[A-Za-z0-9_,;\.?!-]*"/                                 -> string_call
-x: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
-y: /[A-Za-z][A-Za-z0-9_]*/                                  -> val_call
+TGT: (ALL | IDENT)
+ALL: "all"
+IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s)([A-Za-z][A-Za-z0-9_]*)/                                  
+S: /"[A-Za-z0-9_,;\.?!-]*\w*"/
 
 %import common.WORD
 %import common.WS
 %import common.NEWLINE
 %ignore WS
 %ignore COMMENT
+"""
+
+# Have to make a separate grammar for "for_each" processing
+
+FOREACH_GRAMMAR = """
+
+start:      expr                                                        -> val_call
+
+expr:       value                                                       -> val_call
+            | "[]"                                                      -> list_call                                                                        
+            | dict                                                      -> val_call
+
+dict:       "{" fieldvals "}"                                           -> val_call
+
+fieldvals:  IDENT "=" value
+            | IDENT "=" value "," fieldvals
+            
+value:      IDENT                                                       -> return_val_call                                                                                        
+            | IDENT "." IDENT                                           -> return_dot_call
+            | S                                                         -> string_call
+
+TGT: (ALL | IDENT)
+ALL: "all"
+IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s)([A-Za-z][A-Za-z0-9_]*)/                                  
+S: /"[A-Za-z0-9_,;\.?!-]*\w*"/
+
+%import common.WORD
+%import common.WS
+%import common.NEWLINE
+%ignore WS
+
 """
 
 
@@ -73,7 +118,7 @@ class T(Transformer):
     def auth_call(self, args):
         try:
             p = str(args[0])
-            pwd = str(args[1])
+            pwd = str(args[1]).strip('"')
             self.d.set_principal(p, pwd)
         
         except SecurityViolation as e:
@@ -115,7 +160,7 @@ class T(Transformer):
 
     def create_principal_call(self, args):
         try:
-            self.d.create_principal(str(args[0]), str(args[1]))
+            self.d.create_principal(str(args[0]), str(args[1]).strip('"'))
             self.ret.append({"status": "CREATE_PRINCIPAL"})
         
         except SecurityViolation as e:
@@ -125,7 +170,7 @@ class T(Transformer):
 
     def change_password_call(self, args):
         try:
-            self.d.change_password(str(args[0]), str(args[1]))
+            self.d.change_password(str(args[0]), str(args[1]).strip('"'))
             self.ret.append({"status": "CHANGE_PASSWORD"})
         
         except SecurityViolation as e:
@@ -135,13 +180,52 @@ class T(Transformer):
 
     def set_call(self, args):
         try:
-            self.d.set_record(args[0], args[1])
+            self.d.set_record(str(args[0]), args[1])
             self.ret.append({"status": "SET"})
         
         except SecurityViolation as e:
             raise Exception("denied")
         except Exception as e:
             raise Exception("failed")
+
+    def append_call(self, args):
+        self.d.append_record(args[0], args[1])
+    
+    def foreach_call(self, args):
+        try:
+            parser = Lark(FOREACH_GRAMMAR, parser='lalr')
+            tree = parser.parse(args[2])
+
+            old_list = self.d.return_record(str(args[1]))
+
+            if not isinstance(old_list, list):
+                raise Exception("failed")
+
+            new_list = []
+            
+            for elem in old_list:
+                self.d.set_record(args[0], elem)
+                new_val = T(self.d).transform(tree)
+
+                if isinstance(new_val, list):
+                    raise Exception("failed")
+                new_list.append(new_val)
+            
+            self.d.delete_record(args[0]) # delete the record used for temps
+            self.d.set_record(str(args[1]), new_list)
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
+
+    def field_base_call(self, args):
+        return {str(args[0]): args[1]}
+
+    def field_recur_call(self, args):
+        record = args[2]
+        record[str(args[0])] = args[1]
+        return record
 
     def set_delegation_call(self, args):
         try:
@@ -173,27 +257,37 @@ class T(Transformer):
         except Exception as e:
             raise Exception("failed")
 
-    def read_call(self, args):
+    def read_right_call(self, args):
         return Right.READ
 
-    def write_call(self, args):
+    def write_right_call(self, args):
         return Right.WRITE
     
-    def append_call(self, args):
+    def append_right_call(self, args):
         return Right.APPEND
 
-    def delegate_call(self, args):
+    def delegate_right_call(self, args):
         return Right.DELEGATE
 
     def all_call(self, args):
         return "all"
 
-    def exit_call(self, args):
-        print("EXITING")
+    # String methods used for the for each processing
 
+    def dict_str_call(self, args):
+        return "{" + args[0] + "}"
+
+    def field_str_base_call(self, args):
+        return args[0] + "=" + args[1]
+
+    def field_str_recur_call(self, args):
+        return args[0] + "=" + args[1] + "," + args[2]
+
+    def dot_str_call(self, args):
+        return args[0] + "." + args[1]
 
 def parse(database, text):
-    parser = Lark(GRAMMAR)
+    parser = Lark(GRAMMAR, parser='lalr')
 
     # try:
     tree = parser.parse(text)
@@ -214,18 +308,17 @@ def parse(database, text):
 
 def main():
     d = Database("test")
-    text1 = 'as principal admin password "test" do \n set x = [] \n create principal bobby "password" \n change password bobby "newpassword" \n set delegation all admin write->bobby \n return x \n ***'
+    text1 = 'as principal admin password "test" do \n set x = [] \n append to x with {name="jonathan", elem="body"} \n append to x with {name="reuben"} \n foreach y in x replacewith y.name \n return x \n ***'
     text2 = 'as principal bobby password "newpassword" do \n return x \n ***'
-    text3 = 'as principal admin password "test" do \n create principal read "password" \n exit \n ***'
+    text3 = 'as principal admin password "test" do \n foreach y in x replacewith {x=str, y="str"} \n exit \n ***'
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd
     # print(parser.parse("return x = hello").pretty())  # test cmd
     # print(parser.parse("set x = goodbye").pretty())
     # print(parser.parse("append to x with world").pretty())
     print(parse(d, text1))
-    print(parse(d, text2))
-    print(parse(d, text3))
-
+    # print(parse(d, text2))
+    # print(parse(d, text3))
 
 if __name__ == '__main__':
     main()    

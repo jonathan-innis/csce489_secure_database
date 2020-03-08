@@ -33,7 +33,7 @@ prim_cmd:   "create principal" IDENT S                                  -> creat
             | "change password" IDENT S                                 -> change_password_call
             | "set" IDENT "=" expr                                      -> set_call
             | "append to" IDENT "with" expr                             -> append_call
-            | "local" IDENT "=" expr
+            | "local" IDENT "=" expr                                    -> local_call
             | "foreach" IDENT "in" IDENT "replacewith" foreach_str      -> foreach_call
             | "set delegation " TGT IDENT right "->" IDENT              -> set_delegation_call
             | "delete delegation " TGT IDENT right "->" IDENT           -> delete_delegation_call
@@ -55,7 +55,7 @@ field_str:  IDENT "=" val_str                                           -> field
 
 val_str:    IDENT                                                       -> val_call
             | IDENT "." IDENT                                           -> dot_str_call
-            | S                                                         -> string_call
+            | S                                                         -> val_call
 
 READ: "read"
 WRITE: "write"
@@ -68,7 +68,7 @@ COMMENT: "//" /(.)+/
 TGT: (ALL | IDENT)
 ALL: "all"
 IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s)([A-Za-z][A-Za-z0-9_]*)/                                  
-S: /"[A-Za-z0-9_,;\.?!-]*\w*"/
+S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
 %import common.WORD
 %import common.WS
@@ -89,8 +89,8 @@ expr:       value                                                       -> val_c
 
 dict:       "{" fieldvals "}"                                           -> val_call
 
-fieldvals:  IDENT "=" value
-            | IDENT "=" value "," fieldvals
+fieldvals:  IDENT "=" value                                             -> field_base_call
+            | IDENT "=" value "," fieldvals                             -> field_recur_call
             
 value:      IDENT                                                       -> return_val_call                                                                                        
             | IDENT "." IDENT                                           -> return_dot_call
@@ -99,7 +99,7 @@ value:      IDENT                                                       -> retur
 TGT: (ALL | IDENT)
 ALL: "all"
 IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s)([A-Za-z][A-Za-z0-9_]*)/                                  
-S: /"[A-Za-z0-9_,;\.?!-]*\w*"/
+S: /"[A-Za-z0-9_,;\.?!-\s]*\w*"/
 
 %import common.WORD
 %import common.WS
@@ -189,10 +189,28 @@ class T(Transformer):
             raise Exception("failed")
 
     def append_call(self, args):
-        self.d.append_record(args[0], args[1])
+        try:
+            self.d.append_record(args[0], args[1])
+            self.ret.append({"status": "APPEND"})
+
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
+
+    def local_call(self, args):
+        try:
+            self.d.set_local_record(str(args[0]), args[1])
+            self.ret.append({"status": "LOCAL"})
+        
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
     
     def foreach_call(self, args):
         try:
+            print(args[2])
             parser = Lark(FOREACH_GRAMMAR, parser='lalr')
             tree = parser.parse(args[2])
 
@@ -213,6 +231,7 @@ class T(Transformer):
             
             self.d.delete_record(args[0]) # delete the record used for temps
             self.d.set_record(str(args[1]), new_list)
+            self.ret.append({"status": "FOREACH"})
         
         except SecurityViolation as e:
             raise Exception("denied")
@@ -307,17 +326,16 @@ def parse(database, text):
     #         return {"status": "FAILED"}
 
 def main():
-    d = Database("test")
-    text1 = 'as principal admin password "test" do \n set x = [] \n append to x with {name="jonathan", elem="body"} \n append to x with {name="reuben"} \n foreach y in x replacewith y.name \n return x \n ***'
-    text2 = 'as principal bobby password "newpassword" do \n return x \n ***'
-    text3 = 'as principal admin password "test" do \n foreach y in x replacewith {x=str, y="str"} \n exit \n ***'
+    d = Database("admin")
+    text1 = 'as principal admin password "admin" do\ncreate principal bob "BOBPWxxd"\nset x = "my string"\nset y = { f1 = x, f2 = "field2" }\nset delegation x admin read -> bob\nreturn y.f1\n***'
+    text2 = 'as principal admin password "test" do \n foreach y in x replacewith {x="str", y="str"} \n return x \n ***'
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd
     # print(parser.parse("return x = hello").pretty())  # test cmd
     # print(parser.parse("set x = goodbye").pretty())
     # print(parser.parse("append to x with world").pretty())
     print(parse(d, text1))
-    # print(parse(d, text2))
+    print(parse(d, text2))
     # print(parse(d, text3))
 
 if __name__ == '__main__':

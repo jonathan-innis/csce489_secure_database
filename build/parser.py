@@ -22,9 +22,11 @@ expr:       value                                                       -> val_c
 
 dict:       "{" fieldvals "}"                                           -> val_call
 
-fieldvals:  IDENT "=" value                                             -> field_base_call
-            | IDENT "=" value "," fieldvals                             -> field_recur_call
-            
+fieldvals:  base_fieldval                                               -> val_call
+            | base_fieldval "," fieldvals                               -> field_recur_call
+
+base_fieldval: IDENT "=" value                                          -> field_base_call
+
 value:      IDENT                                                       -> return_val_call                                                                                        
             | IDENT "." IDENT                                           -> return_dot_call
             | S                                                         -> string_call
@@ -89,8 +91,10 @@ expr:       value                                                       -> val_c
 
 dict:       "{" fieldvals "}"                                           -> val_call
 
-fieldvals:  IDENT "=" value                                             -> field_base_call
-            | IDENT "=" value "," fieldvals                             -> field_recur_call
+fieldvals:  base_fieldval                                               -> val_call
+            | base_fieldval "," fieldvals                               -> field_recur_call
+
+base_fieldval: IDENT "=" value                                          -> field_base_call
             
 value:      IDENT                                                       -> return_val_call                                                                                        
             | IDENT "." IDENT                                           -> return_dot_call
@@ -239,11 +243,16 @@ class T(Transformer):
             raise Exception("failed")
 
     def field_base_call(self, args):
+        if not isinstance(args[1], str):
+            raise Exception("failed")
         return {str(args[0]): args[1]}
 
     def field_recur_call(self, args):
-        record = args[2]
-        record[str(args[0])] = args[1]
+        record = args[1]
+        for k, v in args[0].items():
+            if k in record:
+                raise Exception("failed")
+            record[k] = v
         return record
 
     def set_delegation_call(self, args):
@@ -327,7 +336,7 @@ def parse(database, text):
 
 def main():
     d = Database("admin")
-    text1 = 'as principal admin password "admin" do\ncreate principal bob "BOBPWxxd"\nset x = "my string"\nset y = { f1 = x, f2 = "field2" }\nset delegation x admin read -> bob\nreturn y.f1\n***'
+    text1 = 'as principal admin password "admin" do\ncreate principal bob "BOBPWxxd"\nset x="my string"\nset y = { f1 = x, f2 = "field2" }\nset delegation x admin read -> bob\nreturn y.f1\n***'
     text2 = 'as principal admin password "test" do \n foreach y in x replacewith {x="str", y="str"} \n return x \n ***'
     # print(parser.parse("exit").pretty())  # test cmd
     # print(parser.parse("create principal prince").pretty())  # test prim cmd

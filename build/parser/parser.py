@@ -2,10 +2,9 @@ import sys
 from lark import Lark, tree, Transformer
 from lark.exceptions import UnexpectedCharacters
 from db.permissions import Right
+from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
 
-# TODO: prog needs to always be starting command
-# TODO: fix line 37 38 -> p ???
 
 GRAMMAR = """
 start:      auth EOL cmd EOL "***"
@@ -125,6 +124,16 @@ class T(Transformer):
             pwd = str(args[1]).strip('"')
             self.d.set_principal(p, pwd)
         
+        except SecurityViolation as e:
+            raise Exception("denied")
+        except Exception as e:
+            raise Exception("failed")
+
+    def exit_call(self, args):
+        try:
+            self.d.exit()
+            self.ret.append({"status": "EXITING"})
+    
         except SecurityViolation as e:
             raise Exception("denied")
         except Exception as e:
@@ -257,7 +266,8 @@ class T(Transformer):
 
     def set_delegation_call(self, args):
         try:
-            self.d.set_delegation(args[0], args[1], args[3], args[2])
+            print(args)
+            self.d.set_delegation(args[0], str(args[1]), str(args[3]), args[2])
             self.ret.append({"status": "SET_DELEGATION"})
 
         except SecurityViolation as e:
@@ -267,7 +277,7 @@ class T(Transformer):
 
     def delete_delegation_call(self, args):
         try:
-            self.d.delete_delegation(args[0], args[1], args[3], args[2])
+            self.d.delete_delegation(args[0], str(args[1]), str(args[3]), args[2])
             self.ret.append({"status": "DELETE_DELEGATION"})
         
         except SecurityViolation as e:
@@ -315,37 +325,20 @@ class T(Transformer):
         return args[0] + "." + args[1]
 
 def parse(database, text):
-    parser = Lark(GRAMMAR, parser='lalr')
-
-    # try:
-    tree = parser.parse(text)
-    t = T(database)
-    t.transform(tree)
-    return t.ret
+    try:
+        parser = Lark(GRAMMAR, parser='lalr')
+        tree = parser.parse(text)
+        t = T(database)
+        t.transform(tree)
+        return t.ret
 
     # Catching Exceptions that are by the database and the parser
-    # except UnexpectedCharacters as e:
-    #     print(e)
-    #     return {"status": "FAILED"}
-    # except Exception as e:
-    #     print(e)
-    #     if str(e.__context__) == "denied":
-    #         return {"status": "DENIED"}
-    #     else:
-    #         return {"status": "FAILED"}
-
-def main():
-    d = Database("admin")
-    text1 = 'as principal admin password "admin" do\ncreate principal bob "BOBPWxxd"\nset x="my string"\nset y = { f1 = x, f2 = "field2" }\nset delegation x admin read -> bob\nreturn y.f1\n***'
-    text2 = 'as principal admin password "test" do \n foreach y in x replacewith {x="str", y="str"} \n return x \n ***'
-    # print(parser.parse("exit").pretty())  # test cmd
-    # print(parser.parse("create principal prince").pretty())  # test prim cmd
-    # print(parser.parse("return x = hello").pretty())  # test cmd
-    # print(parser.parse("set x = goodbye").pretty())
-    # print(parser.parse("append to x with world").pretty())
-    print(parse(d, text1))
-    print(parse(d, text2))
-    # print(parse(d, text3))
-
-if __name__ == '__main__':
-    main()    
+    except UnexpectedCharacters as e:
+        print(e)
+        return [{"status": "FAILED"}]
+    except Exception as e:
+        print(e)
+        if str(e.__context__) == "denied":
+            return [{"status": "DENIED"}]
+        else:
+            return [{"status": "FAILED"}]  

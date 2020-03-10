@@ -317,8 +317,7 @@ class Database:
         self.get_principal(to_principal) #This performs a check to see if the to_principal exists
 
         # If current principal is not from_principal or admin, throw an error
-        curr_username = self.get_current_principal().get_username()
-        if from_principal != curr_username and curr_username != "admin":
+        if from_principal != self.get_current_principal().get_username() and not self.get_current_principal().is_admin():
             raise SecurityViolation("principal specified is not current principal or admin")
         
         # Iterates through the elements that a user has delegate rights on
@@ -330,7 +329,7 @@ class Database:
                     self.__permissions.add_permissions(elem, from_principal, to_principal, right)
         else:
             # Checking whether if the current user is not an admin user, if the from principal has delegate permissions
-            if curr_username != "admin" and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
+            if not self.get_current_principal().is_admin() and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
             elif self.__global_store.read_record(tgt) is None:
                 raise RecordKeyError("record does not exist in the global store")
@@ -345,7 +344,7 @@ class Database:
 
         # If current principal is not from_principal, to_principal, or admin, throw error
         curr_username = self.get_current_principal().get_username()
-        if curr_username != from_principal and curr_username != to_principal and curr_username != "admin":
+        if curr_username != from_principal and curr_username != to_principal and not self.get_current_principal().is_admin():
             raise SecurityViolation("principal specified is not current principal or admin")
 
         # Iterates through the elements that a user has delegate rights on
@@ -356,7 +355,7 @@ class Database:
                 if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem) is not None:
                     self.__permissions.delete_permission(elem, from_principal, to_principal, right)
         else:
-            if curr_username != "admin" and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
+            if not self.get_current_principal().is_admin() and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
             elif self.__global_store.read_record(tgt) is None:
                 raise RecordKeyError("record does not exist in the global store")
@@ -372,7 +371,7 @@ class Database:
             raise SecurityViolation("current principal is not admin user")
         self.__default_delegator = username
 
-    def exit(self):
+    def reset(self):
         """
         The function to exit from the database and reset the local variables in the database
         """
@@ -380,3 +379,12 @@ class Database:
 
         self.__current_principal = None
         self.__local_store = Store()
+
+    def exit(self):
+        """
+        The function to exit from the database and reset the local variables in the database
+        """
+        self.check_principal_set()
+
+        if not self.get_current_principal().is_admin():
+            raise SecurityViolation("current principal is not admin")

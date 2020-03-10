@@ -238,7 +238,7 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
         d.set_record("x", ["record"])
-        d.exit()
+        d.reset()
 
         with pytest.raises(SecurityViolation) as excinfo:
             d.append_record("x", "this is a record")
@@ -395,7 +395,7 @@ class Test_Local_Record:
 
         with pytest.raises(RecordKeyError) as excinfo:
             d.set_local_record("x", "another elem")
-        assert "record name already exits in the database" in str(excinfo.value)
+        assert "record name already resets in the database" in str(excinfo.value)
 
     def test_local_records_reset(self):
         d = Database("test")
@@ -404,7 +404,7 @@ class Test_Local_Record:
         d.set_local_record("x", "elem")
         assert d.return_record("x") == "elem"
 
-        d.exit()
+        d.reset()
 
         d.set_principal("admin", "test")
         with pytest.raises(RecordKeyError) as excinfo:
@@ -835,14 +835,14 @@ class Test_Default_Delegator:
         assert "principal does not have read permission on record" in str(excinfo.value)
 
 
-class Test_Exit:
+class Test_Reset:
 
-    def test_exit(self):
+    def test_reset(self):
         d = Database("test")
         d.set_principal("admin", "test")
         assert d.get_current_principal().get_username() == "admin"
 
-        d.exit()
+        d.reset()
         with pytest.raises(SecurityViolation) as excinfo:
             d.get_current_principal()
         assert "current principal is not set" in str(excinfo.value)

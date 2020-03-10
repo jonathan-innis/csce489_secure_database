@@ -395,7 +395,7 @@ class Test_Local_Record:
 
         with pytest.raises(RecordKeyError) as excinfo:
             d.set_local_record("x", "another elem")
-        assert "record name already resets in the database" in str(excinfo.value)
+        assert "record name already exists in the database" in str(excinfo.value)
 
     def test_local_records_reset(self):
         d = Database("test")

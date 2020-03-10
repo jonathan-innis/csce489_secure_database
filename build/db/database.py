@@ -263,7 +263,7 @@ class Database:
         self.check_principal_set()
 
         if self.__local_store.read_record(record_name) is not None or self.__global_store.read_record(record_name) is not None:
-            raise RecordKeyError("record name already exits in the database")
+            raise RecordKeyError("record name already exists in the database")
         else:
             self.__local_store.set_record(record_name, value)
 

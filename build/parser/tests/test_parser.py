@@ -6,21 +6,48 @@ from db.database import Database
 from parser.parser import parse
 
 
+def validate_tests(d, tests):
+    for test in tests:
+        ret = parse(d, test["text"])
+        assert len(ret) == len(test["exp_status"])
+        for i, code in enumerate(ret):
+            assert code["status"] == test["exp_status"][i]
+        if "output" in test:
+            if isinstance(test["output"], list):
+                for first, second in zip(test["output"], ret[-1]["output"]):
+                    if isinstance(first, dict):
+                        for k in first:
+                            assert k in second
+                            assert first[k] == second[k]
+                    else:
+                        assert first == second
+            elif isinstance(test["output"], dict):
+                for k in ret[-1]["output"]:
+                    assert k in test["output"]
+                    assert ret[-1]["output"][k] == test["output"][k] 
+            assert ret[-1]["output"] == test["output"]
+        else:
+            assert "output" not in ret[-1]
+
+
 class Test_Basic_Parse:
 
     def test_basic_parse(self):
         d = Database("admin")
 
         text = 'as principal admin password "admin" do\ncreate principal bob "BOBPWxxd"\nset x="my string"\nset y = { f1 = x, f2 = "field2" }\nset delegation x admin read -> bob\nreturn y.f1\n***'
-        ret = parse(d, text)
 
-        exp_status = ["CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "RETURNING"]
+        tests = [
+            {
+                "text": text,
+                "exp_status": ["CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "RETURNING"],
+                "output": "my string"
+            }
+        ]
 
-        assert len(ret) == len(exp_status)
-        for i, elem in enumerate(ret):
-            assert elem["status"] == exp_status[i]
+        d = Database("admin")
 
-        assert ret[-1]["output"] == "my string"
+        validate_tests(d, tests)
     
     def test_mult_commands(self):
         d = Database("admin")
@@ -54,12 +81,8 @@ class Test_Basic_Parse:
         ]
 
         d = Database("admin")
-        for test in tests:
-            ret = parse(d, test["text"])
-            assert len(ret) == len(test["exp_status"])
-            for i, code in enumerate(ret):
-                assert code["status"] == test["exp_status"][i]
-            assert ret[-1]["output"] == test["output"]
+
+        validate_tests(d, tests)
 
 
 class Test_Exit_Parse:
@@ -67,16 +90,15 @@ class Test_Exit_Parse:
     def test_exit_properly(self):
         text1 = 'as principal admin password "admin" do\nexit\n***'
 
-        test = {
+        tests = [
+            {
                 "text": text1,
                 "exp_status": ["EXITING"]
-        }
+            }
+        ]
 
         d = Database("admin")
-        ret = parse(d, test["text"])
-        assert len(ret) == len(test["exp_status"])
-        for i, code in enumerate(ret):
-            assert code["status"] == test["exp_status"][i]
+        validate_tests(d, tests)
 
     def test_exit_fails(self):
         text1 = 'as principal admin password "admin" do\ncreate principal bob "password"\nexit\n***'
@@ -94,12 +116,7 @@ class Test_Exit_Parse:
         ]
 
         d = Database("admin")
-        
-        for test in tests:
-            ret = parse(d, test["text"])
-            assert len(ret) == len(test["exp_status"])
-            for i, code in enumerate(ret):
-                assert code["status"] == test["exp_status"][i]
+        validate_tests(d, tests)
 
 
 class Test_Return_Parse:
@@ -117,12 +134,7 @@ class Test_Return_Parse:
 
         d = Database("admin")
         
-        for test in tests:
-            ret = parse(d, test["text"])
-            assert len(ret) == len(test["exp_status"])
-            for i, code in enumerate(ret):
-                assert code["status"] == test["exp_status"][i]
-            assert ret[-1]["output"] == test["output"]
+        validate_tests(d, tests)
 
     def test_return_record(self):
         text1 = 'as principal admin password "admin" do\n set x = {field1="element", field2="element"}\nreturn x\n***'
@@ -137,14 +149,7 @@ class Test_Return_Parse:
 
         d = Database("admin")
         
-        for test in tests:
-            ret = parse(d, test["text"])
-            assert len(ret) == len(test["exp_status"])
-            for i, code in enumerate(ret):
-                assert code["status"] == test["exp_status"][i]
-            for k in ret[-1]["output"]:
-                assert k in test["output"]
-                assert ret[-1]["output"][k] == test["output"][k] 
+        validate_tests(d, tests)
 
     def test_return_record_field(self):
         text1 = 'as principal admin password "admin" do\n set x ={first="jonathan", last="innis"}\nreturn x.last\n***'
@@ -159,12 +164,82 @@ class Test_Return_Parse:
 
         d = Database("admin")
         
-        for test in tests:
-            ret = parse(d, test["text"])
-            assert len(ret) == len(test["exp_status"])
-            for i, code in enumerate(ret):
-                assert code["status"] == test["exp_status"][i]
-            assert ret[-1]["output"] == test["output"]
+        validate_tests(d, tests)
+
+
+class Test_Auth_Parse:
+
+    def test_valid_auth(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal bob "password1"\ncreate principal alice "password2"\ncreate principal eve "password3"\nreturn "exiting"\n***'
+        text2 = 'as principal bob password "password1" do\nreturn "exiting"\n***'
+        text3 = 'as principal alice password "password2" do\nreturn "exiting"\n***'
+        text4 = 'as principal eve password "password3" do\nreturn "exiting"\n***'
+        text5 = 'as principal bob password "sfoasjfoidsafiosja43589289" do\nreturn "exiting"\n***'
+        text6 = 'as principal admin password "admin1" do\nreturn "exiting"\n***'
+        text7 = 'as principal admin password "admi" do\nreturn "exiting"\n***'
+        text8 = 'as principal bobby password "password3" do\nreturn "exiting"\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text2,
+                "exp_status": ["RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text3,
+                "exp_status": ["RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text4,
+                "exp_status": ["RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text5,
+                "exp_status": ["DENIED"],
+            },
+            {
+                "text": text6,
+                "exp_status": ["DENIED"],
+            },
+            {
+                "text": text7,
+                "exp_status": ["DENIED"],
+            },
+            {
+                "text": text8,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
+        
+        validate_tests(d, tests)
+
+    def test_require_auth(self):
+        text1 = 'create principal bob "password1"\nexit\n***'
+        text2 = 'set x =[]\nexit\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"],
+            }
+        ]
+
+        d = Database("admin")
+        
+        validate_tests(d, tests)
 
 
 class Test_Append_Parse:
@@ -172,60 +247,118 @@ class Test_Append_Parse:
     def test_append_list(self):
         text1 = 'as principal admin password "admin" do\nset x=[]\nset y =[]\nset z={first= "elem", second= "elem"}\nappend to x with "str"\n append to y with z\n append to y with z\nappend to x with y\nreturn x\n***'
 
-        test = {
+        tests = [
+            {
                 "text": text1,
                 "exp_status": ["SET", "SET", "SET", "APPEND", "APPEND", "APPEND", "APPEND", "RETURNING"],
                 "output": ["str", {"first": "elem", "second": "elem"}, {"first": "elem", "second": "elem"}]
-        }
+            }
+        ]
 
         d = Database("admin")
-        ret = parse(d, test["text"])
-        assert len(ret) == len(test["exp_status"])
-        for i, code in enumerate(ret):
-            assert code["status"] == test["exp_status"][i]
-        for first, second in zip(test["output"], ret[-1]["output"]):
-            if isinstance(first, dict):
-                for k in first:
-                    assert k in second
-                    assert first[k] == second[k]
-            else:
-                assert first == second
+        
+        validate_tests(d, tests)
 
     def test_append_str(self):
         text1 = 'as principal admin password "admin" do\nset x=[]\nset z="str"\nappend to x with z\n append to x with z\nreturn x\n***'
 
-        test = {
+        tests = [
+            {
                 "text": text1,
                 "exp_status": ["SET", "SET", "APPEND", "APPEND", "RETURNING"],
                 "output": ["str", "str"]
-        }
+            }
+        ]
 
         d = Database("admin")
-        ret = parse(d, test["text"])
-        assert len(ret) == len(test["exp_status"])
-        for i, code in enumerate(ret):
-            assert code["status"] == test["exp_status"][i]
-        for first, second in zip(test["output"], ret[-1]["output"]):
-            assert first == second
+        
+        validate_tests(d, tests)
 
     def test_append_dict(self):
         text1 = 'as principal admin password "admin" do\nset x=[]\nset z={first="elem", second="elem"}\nappend to x with z\n append to x with z\nreturn x\n***'
 
-        test = {
+        tests = [
+            {
                 "text": text1,
                 "exp_status": ["SET", "SET", "APPEND", "APPEND", "RETURNING"],
                 "output": [{"first": "elem", "second": "elem"}, {"first": "elem", "second": "elem"}]
-        }
+            }
+        ]
 
         d = Database("admin")
-        ret = parse(d, test["text"])
-        assert len(ret) == len(test["exp_status"])
-        for i, code in enumerate(ret):
-            assert code["status"] == test["exp_status"][i]
-        for first, second in zip(test["output"], ret[-1]["output"]):
-            for k in first:
-                assert k in second
-                assert first[k] == second[k]
+        
+        validate_tests(d, tests)
+
+class Test_Whitespace_Parse:
+    
+    def test_valid_whitespace(self):
+        text1 = '    as      principal      admin       password      "admin"       do\n   set    x    =    "this is a string"    \n       return       x    \n     ***   '
+        text2 = 'as principal admin password "admin" do\n     set     x     =    {       x      =     "elem"     ,     name      =      "jonny"     }    \n      return   x     .      x    \n    ***   '
+        text3 = 'as principal admin password "admin" do\n      set      x       =[]       \n        return      x   \n    ***      '
+        text4 = 'as principal admin password "admin" do\n      create      principal       jonny      "password"    \n return "exiting"\n ***'
+        text5 = 'as principal admin password "admin" do\n        change       password      admin        "another password"     \n        return       "exiting"     \n      ***     '
+        text6 = 'as principal admin password "another password" do\nset x=[]\n        append      to      x       with       {x="elem",name="anotherelem"}      \n        return        x       \n     ***     '
+        text7 = 'as principal admin password "another password" do\n         local          y         =           "elem"       \n        return       y      \n     ***      '
+        text8 = 'as principal admin password "another password" do\n        foreach        rec        in        x        replacewith       rec.x      \n       return      x      \n      ***      '
+        text9 = 'as principal admin password "another password" do\n      set        delegation      x      admin        read        ->      jonny       \n     return            "exiting"       \n       ***      '
+        text10 = 'as principal admin password "another password" do\n     delete         delegation       x          admin       read       ->          jonny       \n           return         "exiting"       \n       ***     '
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["SET", "RETURNING"],
+                "output": "this is a string"
+            },
+            {
+                "text": text2,
+                "exp_status": ["SET", "RETURNING"],
+                "output": "elem"
+            },
+            {
+                "text": text3,
+                "exp_status": ["SET", "RETURNING"],
+                "output": []
+            },
+            {
+                "text": text4,
+                "exp_status": ["CREATE_PRINCIPAL", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text5,
+                "exp_status": ["CHANGE_PASSWORD", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text6,
+                "exp_status": ["SET", "APPEND", "RETURNING"],
+                "output": [{"x": "elem", "name": "anotherelem"}]
+            },
+            {
+                "text": text7,
+                "exp_status": ["LOCAL", "RETURNING"],
+                "output": "elem"
+            },
+            {
+                "text": text8,
+                "exp_status": ["FOREACH", "RETURNING"],
+                "output": ["elem"]
+            },
+            {
+                "text": text9,
+                "exp_status": ["SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text10,
+                "exp_status": ["DELETE_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            }
+        ]
+
+        d = Database("admin")
+
+        validate_tests(d, tests)
 
 class Test_Failed_Parse:
 
@@ -245,8 +378,5 @@ class Test_Failed_Parse:
         ]
 
         d = Database("admin")
-        for test in tests:
-            ret = parse(d, test["text"])
-            assert len(ret) == len(test["exp_status"])
-            for i, code in enumerate(ret):
-                assert code["status"] == test["exp_status"][i]
+        
+        validate_tests(d, tests)

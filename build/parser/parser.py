@@ -7,61 +7,64 @@ from db.database import Database, PrincipalKeyError, SecurityViolation
 
 
 GRAMMAR = """
-start:      auth EOL cmd EOL "***"
+start:      _WS? auth _WS? EOL _WS? cmd _WS? EOL _WS? "***" _WS?
 
-auth:       "as principal" IDENT "password" S "do"                      -> auth_call 
+auth:       "as" _WS "principal" _WS IDENT _WS "password" _WS S _WS "do"                    -> auth_call 
 
-cmd:        "exit"                                                      -> exit_call                    
-            | "return " expr                                            -> end_return_call
-            | prim_cmd EOL cmd
+cmd:        "exit"                                                                          -> exit_call                    
+            | "return" _WS expr                                                             -> end_return_call
+            | prim_cmd _WS? EOL _WS? cmd _WS?
             
-expr:       value                                                       -> val_call
-            | "[]"                                                      -> list_call                                                                        
-            | dict                                                      -> val_call
+expr:       value                                                                           -> val_call
+            | "[]"                                                                          -> list_call                                                                        
+            | dict                                                                          -> val_call
 
-dict:       "{" fieldvals "}"                                           -> val_call
+dict:       "{" _WS? fieldvals _WS? "}"                                                     -> val_call
 
-fieldvals:  base_fieldval                                               -> val_call
-            | base_fieldval "," fieldvals                               -> field_recur_call
+fieldvals:  base_fieldval _WS?                                                              -> val_call
+            | base_fieldval _WS? "," _WS? fieldvals                                         -> field_recur_call
 
-base_fieldval: IDENT "=" value                                          -> field_base_call
+base_fieldval: IDENT _WS? "=" _WS? value                                                    -> field_base_call
 
-value:      IDENT                                                       -> return_val_call                                                                                        
-            | IDENT "." IDENT                                           -> return_dot_call
-            | S                                                         -> string_call
+value:      IDENT _WS?                                                                      -> return_val_call                                                                                        
+            | IDENT _WS? "." _WS? IDENT                                                     -> return_dot_call
+            | S                                                                             -> string_call
 
-prim_cmd:   "create principal" IDENT S                                  -> create_principal_call
-            | "change password" IDENT S                                 -> change_password_call
-            | "set" IDENT "=" expr                                      -> set_call
-            | "append to" IDENT "with" expr                             -> append_call
-            | "local" IDENT "=" expr                                    -> local_call
-            | "foreach" IDENT "in" IDENT "replacewith" foreach_str      -> foreach_call
-            | "set delegation " TGT IDENT right "->" IDENT              -> set_delegation_call
-            | "delete delegation " TGT IDENT right "->" IDENT           -> delete_delegation_call
-            | "default delegator =" IDENT                               -> default_delegator_call
+prim_cmd:   "create" _WS "principal" _WS IDENT _WS S                                        -> create_principal_call
+            | "change" _WS "password" _WS IDENT _WS S                                       -> change_password_call
+            | _SET _WS IDENT _WS? "=" _WS? expr                                             -> set_call
+            | "append" _WS "to" _WS IDENT _WS "with" _WS expr                               -> append_call
+            | "local" _WS IDENT _WS? "=" _WS? expr                                          -> local_call
+            | "foreach" _WS IDENT _WS "in" _WS IDENT _WS "replacewith" _WS foreach_str      -> foreach_call
+            | _SET_DELEGATION _WS TGT _WS IDENT _WS right _WS? "->" _WS? IDENT              -> set_delegation_call
+            | "delete" _WS "delegation" _WS TGT _WS IDENT _WS right _WS? "->" _WS? IDENT    -> delete_delegation_call
+            | "default" _WS "delegator" _WS "=" _WS? IDENT                                  -> default_delegator_call
             
-right:      READ                                                        -> read_right_call                                          
-            | WRITE                                                     -> write_right_call
-            | APPEND                                                    -> append_right_call
-            | DELEGATE                                                  -> delegate_right_call
+right:      READ                                                                            -> read_right_call                                          
+            | WRITE                                                                         -> write_right_call
+            | APPEND                                                                        -> append_right_call
+            | DELEGATE                                                                      -> delegate_right_call
 
-foreach_str:    val_str                                                 -> val_call
-                | "[]"                                                  -> val_call
-                | dict_str                                              -> val_call
+foreach_str:    val_str                                                                     -> val_call
+                | "[]"                                                                      -> val_call
+                | dict_str                                                                  -> val_call
 
-dict_str: "{" field_str "}"                                             -> dict_str_call
+dict_str: "{" _WS? field_str _WS? "}"                                                       -> dict_str_call
 
-field_str:  IDENT "=" val_str                                           -> field_str_base_call
-            | IDENT "=" val_str "," field_str                           -> field_str_recur_call
+field_str:  IDENT _WS? "=" _WS? val_str                                                     -> field_str_base_call
+            | IDENT _WS? "=" _WS? val_str _WS? "," _WS? field_str                           -> field_str_recur_call
 
-val_str:    IDENT                                                       -> val_call
-            | IDENT "." IDENT                                           -> dot_str_call
-            | S                                                         -> val_call
+val_str:    IDENT                                                                           -> val_call
+            | IDENT _WS? "." _WS? IDENT                                                     -> dot_str_call
+            | S                                                                             -> val_call
 
 READ: "read"
 WRITE: "write"
 APPEND: "append"
 DELEGATE: "delegate"
+
+_SET_DELEGATION: "set" _WS "delegation"
+_SET: "set"
 
 EOL : " "* ( NEWLINE | /\f/)
 COMMENT: "//" /(.)+/
@@ -72,9 +75,8 @@ IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation
 S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
 %import common.WORD
-%import common.WS
+%import common.WS_INLINE -> _WS
 %import common.NEWLINE
-%ignore WS
 %ignore COMMENT
 """
 
@@ -88,26 +90,25 @@ expr:       value                                                       -> val_c
             | "[]"                                                      -> list_call                                                                        
             | dict                                                      -> val_call
 
-dict:       "{" fieldvals "}"                                           -> val_call
+dict:       "{" _WS? fieldvals _WS? "}"                                 -> val_call
 
-fieldvals:  base_fieldval                                               -> val_call
-            | base_fieldval "," fieldvals                               -> field_recur_call
+fieldvals:  base_fieldval _WS?                                          -> val_call
+            | base_fieldval _WS? "," _WS? fieldvals                     -> field_recur_call
 
-base_fieldval: IDENT "=" value                                          -> field_base_call
+base_fieldval: IDENT _WS? "=" _WS? value                                -> field_base_call
             
-value:      IDENT                                                       -> return_val_call                                                                                        
-            | IDENT "." IDENT                                           -> return_dot_call
+value:      IDENT _WS?                                                  -> return_val_call                                                                                        
+            | IDENT _WS? "." _WS? IDENT                                 -> return_dot_call
             | S                                                         -> string_call
 
 TGT: (ALL | IDENT)
 ALL: "all"
 IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s)([A-Za-z][A-Za-z0-9_]*)/                                  
-S: /"[A-Za-z0-9_,;\.?!-\s]*\w*"/
+S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
 %import common.WORD
-%import common.WS
+%import common.WS_INLINE -> _WS
 %import common.NEWLINE
-%ignore WS
 
 """
 
@@ -122,6 +123,7 @@ class T(Transformer):
         try:
             p = str(args[0])
             pwd = str(args[1]).strip('"')
+            print(p, pwd)
             self.d.set_principal(p, pwd)
         
         except SecurityViolation as e:
@@ -157,6 +159,7 @@ class T(Transformer):
 
     def return_dot_call(self, args):
         try:
+            print(args)
             val = str(args[0]) + "." + str(args[1])
             return self.d.return_record(val)
         
@@ -266,7 +269,6 @@ class T(Transformer):
 
     def set_delegation_call(self, args):
         try:
-            print(args)
             self.d.set_delegation(args[0], str(args[1]), str(args[3]), args[2])
             self.ret.append({"status": "SET_DELEGATION"})
 

@@ -134,7 +134,7 @@ class Database:
                                  username password combination does not authenticate correctly.
         """
         if username not in self.__principals:
-            raise SecurityViolation("invalid username/password combination for principal")
+            raise PrincipalKeyError("username doesn't exist in the database")
         p = self.__principals[username]
         if not p.authenticate(password):
             raise SecurityViolation("invalid username/password combination for principal")

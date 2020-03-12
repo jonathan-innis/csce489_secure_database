@@ -40,9 +40,9 @@ class Test_Set_Current_Principal:
 
     def test_username_not_exist(self):
         d = Database("test")
-        with pytest.raises(SecurityViolation) as excinfo:
+        with pytest.raises(PrincipalKeyError) as excinfo:
             d.set_principal("user1", "test")
-        assert "invalid username/password combination for principal" in str(excinfo.value)
+        assert "username doesn't exist in the database" in str(excinfo.value)
         d.set_principal("admin", "test")
 
     def test_password_invalid(self):

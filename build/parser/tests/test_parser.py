@@ -28,6 +28,7 @@ def validate_tests(d, tests):
             assert ret[-1]["output"] == test["output"]
         else:
             assert "output" not in ret[-1]
+        d.reset()
 
 
 class Test_Basic_Parse:
@@ -302,6 +303,8 @@ class Test_Whitespace_Parse:
         text8 = 'as principal admin password "another password" do\n        foreach        rec        in        x        replacewith       rec.x      \n       return      x      \n      ***      '
         text9 = 'as principal admin password "another password" do\n      set        delegation      x      admin        read        ->      jonny       \n     return            "exiting"       \n       ***      '
         text10 = 'as principal admin password "another password" do\n     delete         delegation       x          admin       read       ->          jonny       \n           return         "exiting"       \n       ***     '
+        text11 = 'as principal admin password "another password" do\n        default         delegator       =        admin        \n          return         "exiting"        \n       ***     '
+        text12 = 'as principal admin password "another password" do\n         set            z               =                     []            \n          append       to      z       with         "expression"   \n        append  to  z   with      "another expression"       \n        return z    \n   ***   '
 
         tests = [
             {
@@ -353,12 +356,263 @@ class Test_Whitespace_Parse:
                 "text": text10,
                 "exp_status": ["DELETE_DELEGATION", "RETURNING"],
                 "output": "exiting"
+            },
+            {
+                "text": text11,
+                "exp_status": ["DEFAULT_DELEGATOR", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text12,
+                "exp_status": ["SET", "APPEND", "APPEND", "RETURNING"],
+                "output": ["expression", "another expression"]
             }
         ]
 
         d = Database("admin")
 
         validate_tests(d, tests)
+
+    def test_invalid_auth(self):
+        text1 = 'asprincipal admin password "admin" do\nreturn ""\n***'
+        text2 = 'as principaladmin password "admin" do\nreturn ""\n***'
+        text3 = 'as principal adminpassword "admin" do\nreturn ""\n***'
+        text4 = 'as principal admin password"admin" do\nreturn ""\n***'
+        
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text4,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
+
+        validate_tests(d, tests)
+
+    def test_invalid_return(self):
+        text1 = 'as principal admin password "admin" do\nreturn[]\n***'
+        text2 = 'as principal admin password "admin" do\nreturn""\n***'
+        text3 = 'as principal admin password "admin" do\nreturn{}\n***'
+        
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
+
+        validate_tests(d, tests)
+
+    def test_invalid_create_principal(self):
+        text1 = 'as principal admin password "admin" do\ncreateprincipal bobby "password"\nreturn ""\n***'
+        text2 = 'as principal admin password "admin" do\ncreate principalbobby "password"\nreturn ""\n***'
+        text3 = 'as principal admin password "admin" do\ncreate principal bobby"password"\nreturn ""\n***'
+        
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
+
+        validate_tests(d, tests)
+
+    def test_invalid_change_password(self):
+        text1 = 'as principal admin password "admin" do\nchangepassword admin "password"\nreturn ""\n***'
+        text2 = 'as principal admin password "admin" do\nchange passwordadmin "password"\nreturn ""\n***'
+        text3 = 'as principal admin password "admin" do\nchange password admin"password"\nreturn ""\n***'
+
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
+
+        validate_tests(d, tests)
+
+    def test_invalid_set(self):
+        text1 = 'as principal admin password "admin" do\nsetx=""\nreturn x\n***'
+        text2 = 'as principal admin password "admin" do\nset x=""\nreturn x\n***'
+        text3 = 'as principal admin password "admin" do\nset x={y=x}\nreturn x\n***'
+        text4 = 'as principal admin password "admin" do\nset x=[]\nreturn x\n***'
+        text5 = 'as principal admin password "admin" do\nset x={y="another_elem",z="elem"}\nreturn x\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["SET", "RETURNING"],
+                "output": ""
+            },
+            {
+                "text": text3,
+                "exp_status": ["SET", "RETURNING"],
+                "output": {"y": ""}
+            },
+            {
+                "text": text4,
+                "exp_status": ["SET", "RETURNING"],
+                "output": []
+            },
+            {
+                "text": text5,
+                "exp_status": ["SET", "RETURNING"],
+                "output": {"y": "another_elem", "z": "elem"}
+            }
+        ]
+
+        d = Database("admin")
+
+        validate_tests(d, tests)
+
+    def test_invalid_append(self):
+        text1 = 'as principal admin password "admin" do\nset x=[]\nappendto x with "element"\nreturn x\n***'
+        text2 = 'as principal admin password "admin" do\nset x=[]\nappend tox with "element"\nreturn x\n***'
+        text3 = 'as principal admin password "admin" do\nset x=[]\nappend to xwith "element"\nreturn x\n***'
+        text4 = 'as principal admin password "admin" do\nset x=[]\nappend to x with"element"\nreturn x\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text4,
+                "exp_status": ["FAILED"]
+            },
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+    def test_invalid_local(self):
+        text1 = 'as principal admin password "admin" do\nlocalx=""\nreturn x\n***'
+        text2 = 'as principal admin password "admin" do\nlocal x=""\nreturn x\n***'
+        text3 = 'as principal admin password "admin" do\nlocal x={y="elem"}\nreturn x\n***'
+        text4 = 'as principal admin password "admin" do\nlocal x=[]\nreturn x\n***'
+        text5 = 'as principal admin password "admin" do\nlocal x={y="another_elem",z="elem"}\nreturn x\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["LOCAL", "RETURNING"],
+                "output": ""
+            },
+            {
+                "text": text3,
+                "exp_status": ["LOCAL", "RETURNING"],
+                "output": {"y": "elem"}
+            },
+            {
+                "text": text4,
+                "exp_status": ["LOCAL", "RETURNING"],
+                "output": []
+            },
+            {
+                "text": text5,
+                "exp_status": ["LOCAL", "RETURNING"],
+                "output": {"y": "another_elem", "z": "elem"}
+            }
+        ]
+
+        d = Database("admin")
+
+        validate_tests(d, tests)
+
+
+class Test_Comments:
+
+    def test_valid_comment(self):
+        text1 = 'as principal admin password "admin" do //this is a comment\nreturn "returning"\n***'
+        text2 = 'as principal admin password "admin" do//this is a comment\nreturn "returning"\n***'
+        text3 = 'as principal admin password "admin" do\n// this is a full line comment that I want removed\nreturn "returning"\n***'
+        text4 = 'as principal admin password "admin" do\n    // this is an invalid full line comment\nreturn "returning"\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["RETURNING"],
+                "output": "returning"
+            },
+            {
+                "text": text2,
+                "exp_status": ["RETURNING"],
+                "output": "returning"
+            },
+            {
+                "text": text3,
+                "exp_status": ["RETURNING"],
+                "output": "returning"
+            },
+            {
+                "text": text4,
+                "exp_status": ["FAILED"],
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
 
 class Test_Failed_Parse:
 

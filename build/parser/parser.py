@@ -67,7 +67,9 @@ _SET_DELEGATION: "set" _WS "delegation"
 _SET: "set"
 
 EOL : " "* ( NEWLINE | /\f/)
-COMMENT: "//" /(.)+/
+COMMENT: (SAME_LINE_COMMENT | FULL_LINE_COMMENT)
+SAME_LINE_COMMENT: _WS? "//" /[A-Za-z0-9_ ,;\.?!-]*/
+FULL_LINE_COMMENT: EOL "//" /[A-Za-z0-9_ ,;\.?!-]*/
 
 TGT: (ALL | IDENT)
 ALL: "all"
@@ -123,7 +125,6 @@ class T(Transformer):
         try:
             p = str(args[0])
             pwd = str(args[1]).strip('"')
-            print(p, pwd)
             self.d.set_principal(p, pwd)
         
         except SecurityViolation as e:
@@ -159,7 +160,6 @@ class T(Transformer):
 
     def return_dot_call(self, args):
         try:
-            print(args)
             val = str(args[0]) + "." + str(args[1])
             return self.d.return_record(val)
         
@@ -215,6 +215,7 @@ class T(Transformer):
             raise Exception("failed")
 
     def local_call(self, args):
+        print(args)
         try:
             self.d.set_local_record(str(args[0]), args[1])
             self.ret.append({"status": "LOCAL"})
@@ -226,7 +227,6 @@ class T(Transformer):
     
     def foreach_call(self, args):
         try:
-            print(args[2])
             parser = Lark(FOREACH_GRAMMAR, parser='lalr')
             tree = parser.parse(args[2])
 
@@ -331,6 +331,7 @@ def parse(database, text):
         parser = Lark(GRAMMAR, parser='lalr')
         tree = parser.parse(text)
         t = T(database)
+        print(text)
         t.transform(tree)
         return t.ret
 

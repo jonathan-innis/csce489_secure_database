@@ -262,6 +262,8 @@ class Database:
 
         self.check_principal_set()
 
+        print(record_name, value)
+
         if self.__local_store.read_record(record_name) is not None or self.__global_store.read_record(record_name) is not None:
             raise RecordKeyError("record name already exists in the database")
         else:
@@ -375,8 +377,6 @@ class Database:
         """
         The function to exit from the database and reset the local variables in the database
         """
-        self.check_principal_set()
-
         self.__current_principal = None
         self.__local_store = Store()
 

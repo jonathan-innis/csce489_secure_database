@@ -1,0 +1,19 @@
+#!/usr/bin/python3
+from build import TCPHandler, socketserver
+import sys
+
+if __name__ == "__main__":
+    HOST, PORT = "localhost", 0
+    if(len(sys.argv) == 2):
+        PORT = int(sys.argv[1])
+        password = "admin"
+    elif(len(sys.argv) == 3):
+        PORT = int(sys.argv[1])
+        password = sys.argv[2]
+    else:
+        print("usage : ./server port [password]")
+    if(PORT < 1024 or PORT > 65535):
+        exit()
+
+    server = socketserver.TCPServer((HOST, PORT), TCPHandler)
+    server.serve_forever()

@@ -5,6 +5,7 @@ from db.permissions import Right
 from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
 
+#TODO: Remove all the print statements from debugging
 
 GRAMMAR = """
 start:      _WS? auth _WS? EOL _WS? cmd _WS? EOL _WS? "***" _WS?
@@ -190,22 +191,28 @@ class T(Transformer):
 
     def return_val_call(self, args):
         try:
+            print(args)
             val = str(args[0])
             return self.d.return_record(val)
         
         except SecurityViolation as e:
+            print(e)
             raise Exception("denied")
         except Exception as e:
+            print(e)
             raise Exception("failed")
 
     def return_dot_call(self, args):
         try:
             val = str(args[0]) + "." + str(args[1])
+            print(val)
             return self.d.return_record(val)
         
         except SecurityViolation as e:
+            print(e)
             raise Exception("denied")
         except Exception as e:
+            print(e)
             raise Exception("failed")
 
     def end_return_call(self, args):

@@ -167,7 +167,8 @@ class Database:
         else:
             if username not in self.__principals:
                 raise PrincipalKeyError("username for principal does not exist in the database")
-            self.__principals[username].change_password(password)
+            if not self.__principals[username].change_password(password): # changes the password of principal if the principal isn't "anyone"
+                raise SecurityViolation('cannot change password of principal anyone')
 
     def check_permission(self, record_name, right):
         """
@@ -267,28 +268,41 @@ class Database:
         else:
             self.__local_store.set_record(record_name, value)
 
-    def return_record(self, record_name):
+    def return_record(self, raw_record_name):
         """
         The function to return a record either from the global store or the local store
 
         Parameters:
-            record_name (string): The name of the record
+            raw_record_name (string): The name of the record
 
         Returns:
             (string | dict | list): The value associated with the record
 
         Errors:
-            SecurityViolation(): If the principal does not have write permissions on the record
+            SecurityViolation(): If the principal does not have read permissions on the record
             RecordKeyError(): If the record does not exist in the database
         """
 
         self.check_principal_set()
 
-        if self.__local_store.read_record(record_name) is not None:
-            return self.__local_store.read_record(record_name)
-        elif self.__global_store.read_record(record_name) is not None:
-            if self.check_permission(record_name, Right.READ):
-                return self.__global_store.read_record(record_name)
+        start_record_name = raw_record_name.split('.')[0] # Splits the record if there is a dot in the record
+
+        # Checks if the initial part of the record exists in the database
+        if self.__local_store.read_record(start_record_name) is not None:
+            if self.__local_store.read_record(raw_record_name) is not None:
+                return self.__local_store.read_record(raw_record_name)
+            else:
+                raise RecordKeyError("record does not exist in the database")
+
+        # Checks if the initial part of the record exists in the database
+        elif self.__global_store.read_record(start_record_name) is not None:
+            # Checks if the user has permission on the first part of the record
+            if self.check_permission(start_record_name, Right.READ):
+                # Checks if the full record exists in the database
+                if self.__global_store.read_record(raw_record_name) is not None:
+                    return self.__global_store.read_record(raw_record_name) 
+                else:
+                    raise RecordKeyError("record does not exist in the database")
             else:
                 raise SecurityViolation("principal does not have read permission on record")
         else:

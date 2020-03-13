@@ -70,7 +70,7 @@ class Permissions:
         ex: user2 -> user1 -> admin
 
         Parameters:
-            record_name (string): The name of the given record
+            raw_record_name (string): The name of the given record (possibly with dots)
             principal (string): The username of the principal to check rights.
             right (Right): The given right to check on the given principal.
 

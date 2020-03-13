@@ -226,6 +226,14 @@ class Test_Auth_Parse:
     def test_require_auth(self):
         text1 = 'create principal bob "password1"\nexit\n***'
         text2 = 'set x =[]\nexit\n***'
+        text3 = 'change password admin "password"\nexit\n***'
+        text4 = 'set x = []\nappend to x with "str"\nexit\n***'
+        text5 = 'local x = "str"\nexit\n***'
+        text6 = 'set x = []\nappend to x with {first="jonathan", last="innis"}\nappend to x with {first="reuben", second="tadpatri"}\nforeach rec in x replacewith rec.first\nexit\n***'
+        text7 = 'as principal admin password "admin" do\ncreate principal bobby "pasword"\nset x = "str"\nreturn x\n***'
+        text8 = 'set delegation x admin read -> bobby\nexit\n***'
+        text9 = 'delete delegation x admin read -> bobby\nexit\n***'
+        text10 = 'default delegator = admin\nexit\n***'
 
         tests = [
             {
@@ -235,11 +243,245 @@ class Test_Auth_Parse:
             {
                 "text": text2,
                 "exp_status": ["FAILED"],
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text4,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text5,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text6,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text7,
+                "exp_status": ["CREATE_PRINCIPAL", "SET", "RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text8,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text9,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text10,
+                "exp_status": ["FAILED"],
             }
         ]
 
         d = Database("admin")
         
+        validate_tests(d, tests)
+
+
+class Test_Create_Principal:
+
+    def test_valid_create_principal(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal bob "password"\nreturn "exiting"\n***'
+        text2 = 'as principal admin password "admin" do\ncreate principal alice "qu984u 2u08f9a0fu0sa9d8"\nreturn "exiting"\n***'
+        text3 = 'as principal admin password "admin" do\ncreate principal eve "return"\nreturn "exiting"\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text2,
+                "exp_status": ["CREATE_PRINCIPAL", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text3,
+                "exp_status": ["CREATE_PRINCIPAL", "RETURNING"],
+                "output": "exiting"
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+    def test_invalid_create_principal(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal bob\nreturn "exiting"\n***' # malformed command
+        text2 = 'as principal admin password "admin" do\ncreate principal bob password\nreturn "exiting"\n***' # malformed command
+        text3 = 'as principal admin password "admin" do\ncreate principal bob "password"\nreturn "exiting"\n***' # valid command
+        text4 = 'as principal bob password "password" do\ncreate principal alice "password"\nreturn "exiting"\n***' # non-admin creating principal
+        text5 = 'as principal admin password "admin" do\ncreate principal bob "anotherpassword"\nreturn "exiting"\n***' # creating a duplicate user
+        text6 = 'as principal admin password "admin" do\ncreate principal principal "password"\nreturn "exiting"\n***' # using a reserved keyword
+        text7 = 'as principal admin password "admin" do\ncreate principal anyone "password"\nreturn "exiting"\n***' # trying to create user anyone
+        text8 = 'as principal admin password "admin" do\ncreate principal admin "password"\nreturn "exiting"\n***' # trying to create a new admin user
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["CREATE_PRINCIPAL", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text4,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text5,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text6,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text7,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text8,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+
+class Test_Change_Password:
+
+    def test_valid_change_password(self):
+        text1 = 'as principal admin password "admin" do\nchange password admin "another password"\nreturn "exiting"\n***' # valid password change of admin
+        text2 = 'as principal admin password "admin" do\nreturn "exiting"\n***' # invalid password because of change
+        text3 = 'as principal admin password "another password" do\ncreate principal bob "password"\nreturn "exiting"\n***' # valid authentication and created principal
+        text4 = 'as principal bob password "password" do\nchange password bob "this is a longer password and im using this password"\nreturn "exiting"\n***' # valid password change
+        text5 = 'as principal bob password "this is a longer password and im using this password" do\nchange password admin "iknowthepassword"\nreturn "exiting"\n***' # invlaid admin password change
+        text6 = 'as principal admin password "another password" do\nchange password bob "originalpassword"\nreturn "exiting"\n***' # admin changes another user password
+        text7 = 'as principal bob password "this is a longer password and im using this password" do\nreturn "exiting"\n***' # invalid password because of change
+        text8 = 'as principal bob password "originalpassword" do\nreturn "exiting"\n***' # valid password
+        text9 = 'as principal admin password "another password" do\nchange password alice "password"\nreturn "exiting"\n***' # principal doesn't exist
+        text10 = 'as principal admin password "another password" do\nchange password anyone "differentpassword"\nreturn "exiting"\n***' # shouldn't be able to change anyone
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CHANGE_PASSWORD", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text2,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["CREATE_PRINCIPAL", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text4,
+                "exp_status": ["CHANGE_PASSWORD", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text5,
+                "exp_status": ["DENIED"],
+            },
+            {
+                "text": text6,
+                "exp_status": ["CHANGE_PASSWORD", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text7,
+                "exp_status": ["DENIED"],
+            },
+            {
+                "text": text8,
+                "exp_status": ["RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text9,
+                "exp_status": ["FAILED"],
+            },
+            {
+                "text": text10,
+                "exp_status": ["DENIED"] #TODO: check if this is the right return status for this kind of error
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+
+class Test_Set:
+
+    def test_valid_set(self):
+        text1 = 'as principal admin password "admin" do\nset x = "hello"\nset y = x\nset x = "there"\nreturn y\n***'
+        text2 = 'as principal admin password "admin" do\nreturn x\n***'
+        text3 = 'as principal admin password "admin" do\nset x = {elem1=[]}\nreturn x\n***'
+        text4 = 'as principal admin password "admin" do\nset x = {elem1={innerelem="str"}}\nreturn x\n***'
+        text5 = 'as principal admin password "admin" do\nset x = {f1 = "field"}\ncreate principal alice "password"\nreturn x\n***'
+        text6 = 'as principal alice password "password" do\nset y = {f1=x.f2, f2=x.f1}\nreturn y\n***'
+        text7 = 'as principal alice password "password" do\nset y = {f1=z, f1=x.f1}\nreturn y\n***'
+        text8 = 'as principal admin password "admin" do\nset delegation x admin read -> alice\nreturn "exiting"\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["SET", "SET", "SET", "RETURNING"],
+                "output": "hello"
+            },
+            {
+                "text": text2,
+                "exp_status": ["RETURNING"],
+                "output": "there"
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text4,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text5,
+                "exp_status": ["SET", "CREATE_PRINCIPAL", "RETURNING"],
+                "output": {
+                    "f1": "field"
+                }
+            },
+            {
+                "text": text6,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text7,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text8,
+                "exp_status": ["SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            }
+        ]
+
+        d = Database("admin")
         validate_tests(d, tests)
 
 
@@ -307,7 +549,7 @@ class Test_Whitespace_Parse:
         text12 = 'as principal admin password "another password" do\n         set            z               =                     []            \n          append       to      z       with         "expression"   \n        append  to  z   with      "another expression"       \n        return z    \n   ***   '
 
         tests = [
-            {
+            {# changes the password of principal if the principal isn't "anyone"
                 "text": text1,
                 "exp_status": ["SET", "RETURNING"],
                 "output": "this is a string"
@@ -655,24 +897,6 @@ class Test_Filtereach:
                         "name": "sandy"
                     }
                 ]
-            }
-        ]
-
-        d = Database("admin")
-        
-        validate_tests(d, tests)
-
-
-class Test_Filtereach:
-
-    def test_ritchey_example(self):
-        text1 = 'as principal admin password "admin" do\nset x = { f1 = "hello", f2 = "there" }\nset y = let z = concat(x.f1, " ") in concat(z, x.f2)\nreturn y\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["SET", "SET", "RETURNING"],
-                "output": "hello there"
             }
         ]
 

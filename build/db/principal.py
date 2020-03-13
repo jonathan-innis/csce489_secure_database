@@ -84,5 +84,9 @@ class Principal:
             new_password (string): The new password for the principal
         """
 
+        if not self.__accessible:
+            return False
+
         self.__salt = bcrypt.gensalt()
         self.__password = bcrypt.hashpw(new_password.encode('utf-8'), self.__salt)
+        return True

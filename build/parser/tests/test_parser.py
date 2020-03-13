@@ -614,6 +614,73 @@ class Test_Comments:
         validate_tests(d, tests)
 
 
+class Test_String_Functions:
+
+    def test_ritchey_example(self):
+        text1 = 'as principal admin password "admin" do\nset x = "hello"\nset y = split(x,"--")\nset z = concat(x,y.fst)\nreturn { x=x,y=y.snd,z=z }\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["SET", "SET", "SET", "RETURNING"],
+                "output": {
+                    "z": "hellohe",
+                    "x": "hello",
+                    "y": "llo"
+                }
+            }
+        ]
+
+        d = Database("admin")
+        
+        validate_tests(d, tests)
+
+
+class Test_Filtereach:
+
+    def test_ritchey_example(self):
+        text1 = 'as principal admin password "admin" do\nset records=[]\nappend to records with { name = "mike", date = "1-1-90" }\nappend to records with { name = "sandy", date = "1-1-90" }\nappend to records with { name = "dave", date = "1-1-85" }\nfiltereach rec in records with equal(rec.date,"1-1-90")\nreturn records\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["SET", "APPEND", "APPEND", "APPEND", "FILTEREACH", "RETURNING"],
+                "output": [
+                    {
+                        "date": "1-1-90",
+                        "name": "mike"
+                    },
+                    {
+                        "date": "1-1-90",
+                        "name": "sandy"
+                    }
+                ]
+            }
+        ]
+
+        d = Database("admin")
+        
+        validate_tests(d, tests)
+
+
+class Test_Filtereach:
+
+    def test_ritchey_example(self):
+        text1 = 'as principal admin password "admin" do\nset x = { f1 = "hello", f2 = "there" }\nset y = let z = concat(x.f1, " ") in concat(z, x.f2)\nreturn y\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["SET", "SET", "RETURNING"],
+                "output": "hello there"
+            }
+        ]
+
+        d = Database("admin")
+        
+        validate_tests(d, tests)
+
+
 class Test_Failed_Parse:
 
     def test_read_invalid_field(self):

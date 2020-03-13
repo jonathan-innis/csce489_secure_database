@@ -99,8 +99,9 @@ ALL: "all"
 IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s|split\s|concat\s|tolower\s|notequal\s|equal\s|filtereach\s|with\s|let\s)([A-Za-z][A-Za-z0-9_]*)/                                  
 S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
+_WS: (" ")+
+
 %import common.WORD
-%import common.WS_INLINE -> _WS
 %import common.NEWLINE
 %ignore COMMENT
 """
@@ -146,8 +147,9 @@ _LET.2: "let"
 IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s|split\s|concat\s|tolower\s|notequal\s|equal\s|filtereach\s|with\s|let\s)([A-Za-z][A-Za-z0-9_]*)/                                  
 S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
+_WS: (" ")+
+
 %import common.WORD
-%import common.WS_INLINE -> _WS
 %import common.NEWLINE
 
 """

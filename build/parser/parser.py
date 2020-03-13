@@ -250,7 +250,7 @@ class T(Transformer):
 
     def tolower_call(self, args):
         try:
-            if not isinstance(args[0], str) or not isinstance(args[1], str):
+            if not isinstance(args[0], str):
                 raise Exception("failed")
             return args[0].lower()
 
@@ -284,7 +284,9 @@ class T(Transformer):
 
     def notequal_call(self, args):
         try:
-            return not self.equal_call(args)
+            if self.equal_call(args) == "":
+                return "0"
+            return ""
         
         except SecurityViolation as e:
             raise Exception("denied")

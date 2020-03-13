@@ -431,17 +431,22 @@ class Test_Change_Password:
 class Test_Set:
 
     def test_valid_set(self):
-        text1 = 'as principal admin password "admin" do\nset x = "hello"\nset y = x\nset x = "there"\nreturn y\n***'
-        text2 = 'as principal admin password "admin" do\nreturn x\n***'
-        text3 = 'as principal admin password "admin" do\nset x = {elem1=[]}\nreturn x\n***'
-        text4 = 'as principal admin password "admin" do\nset x = {elem1={innerelem="str"}}\nreturn x\n***'
-        text5 = 'as principal admin password "admin" do\nset x = {f1 = "field"}\ncreate principal alice "password"\nreturn x\n***'
-        text6 = 'as principal alice password "password" do\nset z = {f1=x.f2, f2=x.f1}\nreturn z\n***'
-        text7 = 'as principal alice password "password" do\nset z = {f1=aa, f1=x.f1}\nreturn z\n***'
-        text8 = 'as principal admin password "admin" do\nset delegation x admin read -> alice\nreturn "exiting"\n***'
-        text9 = 'as principal alice password "password" do\nset z = {f1=x}\nreturn z\n***'
-        text10 = 'as principal alice password "password" do\nset z = {f1=x.f1}\nreturn z\n***'
-        text11 = 'as principal alice password "password" do\nset aa = {f1=x.f1, f2=x.f2}\nreturn aa\n***'
+        text1 = 'as principal admin password "admin" do\nset x = "hello"\nset y = x\nset x = "there"\nreturn y\n***' # Check that elements are deepcopied
+        text2 = 'as principal admin password "admin" do\nreturn x\n***' # Also checks that element is deepcopied
+        text3 = 'as principal admin password "admin" do\nset x = {elem1=[]}\nreturn x\n***' # Ensures this is invalid
+        text4 = 'as principal admin password "admin" do\nset x = {elem1={innerelem="str"}}\nreturn x\n***' # Ensures this is invalid
+        text5 = 'as principal admin password "admin" do\nset x = {f1 = "field"}\ncreate principal alice "password"\nreturn x\n***' # Creates an element and principal
+        text6 = 'as principal alice password "password" do\nset z = {f1=x.f2, f2=x.f1}\nreturn z\n***' # Ensures that permission is read before field existence is checked
+        text7 = 'as principal alice password "password" do\nset z = {f1=aa, f1=x.f1}\nreturn z\n***' # Ensures that elements are evaluated left to right
+        text8 = 'as principal admin password "admin" do\nset delegation x admin read -> alice\nreturn "exiting"\n***' # Gives permission for principal to read record now
+        text9 = 'as principal alice password "password" do\nset z = {f1=x}\nreturn z\n***' # Ensures this is invalid
+        text10 = 'as principal alice password "password" do\nset z = {f1=x.f1}\nreturn z\n***' # Ensures that principal can now set element
+        text11 = 'as principal alice password "password" do\nset aa = {f1=x.f1, f2=x.f2}\nreturn aa\n***' # Ensures that field existence is still checked
+        text12 = 'as principal alice password "password" do\nset principal = "str"\nreturn principal\n***' # Ensures reserved keywords
+        text13 = 'as principal alice password "password" do\nset as = "str"\nreturn as\n***' # Ensures reserved keywords
+        text14 = 'as principal alice password "password" do\nset password = "str"\nreturn password\n***' # Ensures reserved keywords
+        text15 = 'as principal alice password "password" do\nset i = []\nappend to i with "one"\nappend to i with "two"\nset j = i\nappend to i with "three"\nreturn i\n***' # Check that elements are deepcopied
+        text16 = 'as principal alice password "password" do\nreturn j\n***' # Also checks that element is deepcopied   
 
         tests = [
             {
@@ -496,14 +501,35 @@ class Test_Set:
             {
                 "text": text11,
                 "exp_status": ["FAILED"]
+            },
+            {
+                "text": text12,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text13,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text14,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text15,
+                "exp_status": ["SET", "APPEND", "APPEND", "SET", "APPEND", "RETURNING"],
+                "output": ["one", "two", "three"]
+            },
+            {
+                "text": text16,
+                "exp_status": ["RETURNING"],
+                "output": ["one", "two"]
             }
         ]
 
         d = Database("admin")
         validate_tests(d, tests)
 
-
-class Test_Append_Parse:
+class Test_Append:
 
     def test_append_list(self):
         text1 = 'as principal admin password "admin" do\nset x=[]\nset y =[]\nset z={first= "elem", second= "elem"}\nappend to x with "str"\n append to y with z\n append to y with z\nappend to x with y\nreturn x\n***'
@@ -549,6 +575,58 @@ class Test_Append_Parse:
         d = Database("admin")
         
         validate_tests(d, tests)
+
+
+class Test_Local:
+
+    def test_valid_local(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\nlocal x = "element"\nreturn x\n***'
+        text2 = 'as principal alice password "password" do\nset x = "anotherelement"\nreturn x\n***'
+        text3 = 'as principal admin password "admin" do\nlocal y = "hello"\nreturn y\n***'
+        text4 = 'as principal alice password "password" do\nlocal y = "there"\nreturn y\n***'
+        text5 = 'as principal alice password "password" do\nlocal x = []\nreturn x'
+        text6 = 'as principal admin password "admin" do\nset var = "my_element"\nreturn var\n***'
+        text7 = 'as principal alice password "admin" do\nreturn var\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "LOCAL", "RETURNING"],
+                "output": "element"
+            },
+            {
+                "text": text2,
+                "exp_status": ["SET", "RETURNING"],
+                "output": "anotherelement"
+            },
+            {
+                "text": text3,
+                "exp_status": ["LOCAL", "RETURNING"],
+                "output": "hello"
+            },
+            {
+                "text": text4,
+                "exp_status": ["LOCAL", "RETURNING"],
+                "output": "there"
+            },
+            {
+                "text": text5,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text6,
+                "exp_status": ["SET", "RETURNING"],
+                "output": "my_element"
+            },
+            {
+                "text": text7,
+                "exp_status": ["DENIED"]
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
 
 class Test_Whitespace_Parse:
     
@@ -876,23 +954,94 @@ class Test_Comments:
 
 class Test_String_Functions:
 
-    def test_ritchey_example(self):
-        text1 = 'as principal admin password "admin" do\nset x = "hello"\nset y = split(x,"--")\nset z = concat(x,y.fst)\nreturn { x=x,y=y.snd,z=z }\n***'
+    def test_valid_string_function(self):
+        text1 = 'as principal admin password "admin" do\nlocal x = "hello"\nlocal y = split(x,"--")\nlocal z = concat(x,y.fst)\nreturn { x=x,y=y.snd,z=z }\n***'
+        text2 = 'as principal admin password "admin" do\nlocal x = "BIGWORD"\n local y = tolower(x)\nreturn y\n***'
+        text3 = 'as principal admin password "admin" do\nlocal x = {f1 = "hello", f2 = "there"}\nlocal y = concat(x.f1, " ")\nset y = concat(y, x.f2)\nreturn y\n***'
+        text4 = 'as principal admin password "admin" do\nlocal x = "BIGWORD"\nlocal s = "---"\nlocal y = split(x, s)\nlocal aa = tolower(y.fst)\nlocal ab = tolower(y.snd)\nlocal z = {fst=aa, snd=ab}\nreturn z\n***'
+        text5 = 'as principal admin password "admin" do\nlocal x = "element"\nlocal y = "element"\n local z = equal(x,y)\nreturn z\n***'
+        text6 = 'as principal admin password "admin" do\nlocal x = "element"\nlocal y = "element"\nlocal z = notequal(x,y)\nreturn z\n***'
 
         tests = [
             {
                 "text": text1,
-                "exp_status": ["SET", "SET", "SET", "RETURNING"],
+                "exp_status": ["LOCAL", "LOCAL", "LOCAL", "RETURNING"],
                 "output": {
                     "z": "hellohe",
                     "x": "hello",
                     "y": "llo"
                 }
+            },
+            {
+                "text": text2,
+                "exp_status": ["LOCAL", "LOCAL", "RETURNING"],
+                "output": "bigword"
+            },
+            {
+                "text": text3,
+                "exp_status": ["LOCAL", "LOCAL", "SET", "RETURNING"],
+                "output": "hello there"
+            },
+            {
+                "text": text4,
+                "exp_status": ["LOCAL", "LOCAL", "LOCAL", "LOCAL", "LOCAL", "LOCAL", "RETURNING"],
+                "output": {
+                    "fst": "big",
+                    "snd": "word"
+                }
+            },
+            {
+                "text": text5,
+                "exp_status": ["LOCAL", "LOCAL", "LOCAL", "RETURNING"],
+                "output": ""
+            },
+            {
+                "text": text6,
+                "exp_status": ["LOCAL", "LOCAL", "LOCAL", "RETURNING"],
+                "output": "0"
             }
         ]
 
         d = Database("admin")
         
+        validate_tests(d, tests)
+
+    def test_invalid_arguments(self):
+        text1 = 'as principal admin password "admin" do\nset x = tolower()\nreturn x\n***'
+        text2 = 'as principal admin password "admin" do\nset x = tolower("element", "anotherelement")\nreturn x\n***'
+        text3 = 'as principal admin password "admin" do\nset x = concat("hello")\nreturn x\n***'
+        text4 = 'as principal admin password "admin" do\nset x = concat("hello", " ", "there")\nreturn x\n***'
+        text5 = 'as principal admin password "admin" do\nset x = split("hello")\nreturn x\n***'
+        text6 = 'as principal admin password "admin" do\nset x = split("hello", "--", "-")\nreturn x\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text4,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text5,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text6,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
         validate_tests(d, tests)
 
 

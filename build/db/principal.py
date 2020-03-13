@@ -32,7 +32,8 @@ class Principal:
 
         self.__username = username
         self.__salt = bcrypt.gensalt()
-        self.__password = bcrypt.hashpw(password.encode('utf-8'), self.__salt)
+        # self.__password = bcrypt.hashpw(password.encode('utf-8'), self.__salt)
+        self.__password = password
         self.__admin = admin
         self.__accessible = accessible
 
@@ -71,7 +72,8 @@ class Principal:
         if not self.__accessible:
             return False
 
-        if bcrypt.checkpw(password.encode('utf-8'), self.__password):
+        # if bcrypt.checkpw(password.encode('utf-8'), self.__password):
+        if password == self.__password:
             return True
         return False
 
@@ -88,5 +90,6 @@ class Principal:
             return False
 
         self.__salt = bcrypt.gensalt()
-        self.__password = bcrypt.hashpw(new_password.encode('utf-8'), self.__salt)
+        # self.__password = bcrypt.hashpw(new_password.encode('utf-8'), self.__salt)
+        self.__password = new_password
         return True

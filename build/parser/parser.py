@@ -520,22 +520,24 @@ class T(Transformer):
     def recursive_str_call(self, args):
         return "let " + args[0] + "=" + args[1] + " in " + args[2]
 
+class Parser:
+    def __init__(self):
+        self.parser = Lark(GRAMMAR, parser='lalr')
 
-def parse(database, text):
-    try:
-        parser = Lark(GRAMMAR, parser='lalr')
-        tree = parser.parse(text)
-        t = T(database)
-        t.transform(tree)
-        return t.ret
+    def parse(self, database, text):
+        try:
+            tree = self.parser.parse(text)
+            t = T(database)
+            t.transform(tree)
+            return t.ret
 
-    # Catching Exceptions that are by the database and the parser
-    except UnexpectedCharacters as e:
-        print(e)
-        return [{"status": "FAILED"}]
-    except Exception as e:
-        print(e)
-        if str(e.__context__) == "denied":
-            return [{"status": "DENIED"}]
-        else:
-            return [{"status": "FAILED"}]  
+        # Catching Exceptions that are by the database and the parser
+        except UnexpectedCharacters as e:
+            print(e)
+            return [{"status": "FAILED"}]
+        except Exception as e:
+            print(e)
+            if str(e.__context__) == "denied":
+                return [{"status": "DENIED"}]
+            else:
+                return [{"status": "FAILED"}]  

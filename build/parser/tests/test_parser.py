@@ -3,12 +3,13 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from db.database import Database
-from parser.parser import parse
+from parser.parser import Parser
 
 
 def validate_tests(d, tests):
+    p = Parser()
     for test in tests:
-        ret = parse(d, test["text"])
+        ret = p.parse(d, test["text"])
         assert len(ret) == len(test["exp_status"])
         for i, code in enumerate(ret):
             assert code["status"] == test["exp_status"][i]

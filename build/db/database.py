@@ -297,6 +297,7 @@ class Database:
         # Checks if the initial part of the record exists in the database
         elif self.__global_store.read_record(start_record_name) is not None:
             # Checks if the user has permission on the first part of the record
+            print("Record name: %s"%start_record_name)
             if self.check_permission(start_record_name, Right.READ):
                 # Checks if the full record exists in the database
                 if self.__global_store.read_record(raw_record_name) is not None:

@@ -337,8 +337,10 @@ class T(Transformer):
             self.ret.append({"status": "SET"})
         
         except SecurityViolation as e:
+            print(e)
             raise Exception("denied")
         except Exception as e:
+            print(e)
             raise Exception("failed")
 
     def append_call(self, args):

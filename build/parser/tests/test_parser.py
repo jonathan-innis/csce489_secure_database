@@ -436,9 +436,12 @@ class Test_Set:
         text3 = 'as principal admin password "admin" do\nset x = {elem1=[]}\nreturn x\n***'
         text4 = 'as principal admin password "admin" do\nset x = {elem1={innerelem="str"}}\nreturn x\n***'
         text5 = 'as principal admin password "admin" do\nset x = {f1 = "field"}\ncreate principal alice "password"\nreturn x\n***'
-        text6 = 'as principal alice password "password" do\nset y = {f1=x.f2, f2=x.f1}\nreturn y\n***'
-        text7 = 'as principal alice password "password" do\nset y = {f1=z, f1=x.f1}\nreturn y\n***'
+        text6 = 'as principal alice password "password" do\nset z = {f1=x.f2, f2=x.f1}\nreturn z\n***'
+        text7 = 'as principal alice password "password" do\nset z = {f1=aa, f1=x.f1}\nreturn z\n***'
         text8 = 'as principal admin password "admin" do\nset delegation x admin read -> alice\nreturn "exiting"\n***'
+        text9 = 'as principal alice password "password" do\nset z = {f1=x}\nreturn z\n***'
+        text10 = 'as principal alice password "password" do\nset z = {f1=x.f1}\nreturn z\n***'
+        text11 = 'as principal alice password "password" do\nset aa = {f1=x.f1, f2=x.f2}\nreturn aa\n***'
 
         tests = [
             {
@@ -478,6 +481,21 @@ class Test_Set:
                 "text": text8,
                 "exp_status": ["SET_DELEGATION", "RETURNING"],
                 "output": "exiting"
+            },
+            {
+                "text": text9,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text10,
+                "exp_status": ["SET", "RETURNING"],
+                "output": {
+                    "f1": "field"
+                }
+            },
+            {
+                "text": text11,
+                "exp_status": ["FAILED"]
             }
         ]
 

@@ -97,7 +97,7 @@ FULL_LINE_COMMENT: EOL "//" /[A-Za-z0-9_ ,;\.?!-]*/
 TGT: (ALL | IDENT)
 _LET.2: "let"
 ALL: "all"
-IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s|split\s|concat\s|tolower\s|notequal\s|equal\s|filtereach\s|with\s|let\s)([A-Za-z][A-Za-z0-9_]*)/                                  
+IDENT: /(?!all|append|as|change|create|default|delegate|delegation|delegator|delete|do|exit|foreach|in|local|password|principal|read|replacewith|return|set|to|write|split|concat|tolower|notequal|equal|filtereach|with|let)([A-Za-z][A-Za-z0-9_]*)/                                  
 S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
 _WS: (" ")+
@@ -145,7 +145,7 @@ value:      IDENT _WS?                                                          
 TGT: (ALL | IDENT)
 ALL: "all"
 _LET.2: "let"
-IDENT: /(?!all\s|append\s|as\s|change\s|create\s|default\s|delegate\s|delegation\s|delegator\s|delete\s|do\s|exit\s|foreach\s|in\s|local\s|password\s|principal\s|read\s|replacewith\s|return\s|set\s|to\s|write\s|split\s|concat\s|tolower\s|notequal\s|equal\s|filtereach\s|with\s|let\s)([A-Za-z][A-Za-z0-9_]*)/                                  
+IDENT: /(?!all|append|as|change|create|default|delegate|delegation|delegator|delete|do|exit|foreach|in|local|password|principal|read|replacewith|return|set|to|write|split|concat|tolower|notequal|equal|filtereach|with|let)([A-Za-z][A-Za-z0-9_]*)/                                  
 S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
 _WS: (" ")+

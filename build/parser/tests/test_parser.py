@@ -534,12 +534,18 @@ class Test_Append:
 
     def test_append_list(self):
         text1 = 'as principal admin password "admin" do\nset x=[]\nset y =[]\nset z={first= "elem", second= "elem"}\nappend to x with "str"\n append to y with z\n append to y with z\nappend to x with y\nreturn x\n***'
+        text2 = 'as principal admin password "admin" do\nset x =[]\nappend to x with "one"\nappend to x with "two"\nappend to x with "three"\nappend to x with x\nreturn x\n***'
 
         tests = [
             {
                 "text": text1,
                 "exp_status": ["SET", "SET", "SET", "APPEND", "APPEND", "APPEND", "APPEND", "RETURNING"],
                 "output": ["str", {"first": "elem", "second": "elem"}, {"first": "elem", "second": "elem"}]
+            },
+            {
+                "text": text2,
+                "exp_status": ["SET", "APPEND", "APPEND", "APPEND", "APPEND", "RETURNING"],
+                "output": ["one", "two", "three", "one", "two", "three"]
             }
         ]
 
@@ -622,6 +628,307 @@ class Test_Local:
             {
                 "text": text7,
                 "exp_status": ["DENIED"]
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+
+class Test_For_Each():
+
+    def test_valid_foreach(self):
+        text1 = 'as principal admin password "admin" do\nlocal x = []\nappend to x with {color="blue", type="dog"}\nappend to x with {color= "yellow", type="cat"}\nappend to x with {color="orange", type="tiger"}\n append to x with {color="green", type="bear"}\nforeach rec in x replacewith concat("the color ", rec.color)\nreturn x\n***'
+        text2 = 'as principal admin password "admin" do\nlocal x = []\nappend to x with {color="blue", type="dog"}\nappend to x with {color= "yellow", type="cat"}\nappend to x with {color="orange", type="tiger"}\n append to x with {color="green", type="bear"}\nforeach rec in x replacewith split(rec.color, "--")\nreturn x\n***'
+        text3 = 'as principal admin password "admin" do\nlocal x = []\nappend to x with {color="blue", type="dog"}\nappend to x with {color= "yellow", type="cat"}\nappend to x with {color="orange", type="tiger"}\n append to x with {color="green", type="bear"}\nforeach rec in x replacewith split(rec.color, "-----")\nreturn x\n***'
+        text4 = 'as principal admin password "admin" do\nlocal x = []\nappend to x with {color="blue", type="dog"}\nappend to x with {color= "yellow", type="cat"}\nappend to x with {color="orange", type="tiger"}\n append to x with {color="green", type="bear"}\nforeach rec in x replacewith split(rec.color, "-----")\nreturn rec\n***' # local variable should be deleted after execution
+        text5 = 'as principal admin password "admin" do\nlocal x = []\nappend to x with {color="blue", type="dog"}\nappend to x with {color= "yellow", type="cat"}\nappend to x with {color="orange", type="tiger"}\n append to x with {color="green", type="bear"}\nforeach rec in x replacewith equal(rec.color, "orange")\nreturn x\n***'
+        text6 = 'as principal admin password "admin" do\nlocal x = []\nappend to x with {color="blue", type="dog"}\nappend to x with {color= "yellow", type="cat"}\nappend to x with {color="orange", type="tiger"}\n append to x with {color="green", type="bear"}\nforeach rec in x replacewith let a = concat("the ", rec.color) in let b = concat(a, " ") in let c = concat(b, rec.type) in concat(c, " is in the barn")\nreturn x\n***' # long set of concats together
+        text7 = 'as principal admin password "admin" do\nlocal x = []\nappend to x with {color="blue", type="dog"}\nappend to x with {color= "yellow", type="cat"}\nappend to x with {color="orange", type="tiger"}\n append to x with {color="green", type="bear"}\nforeach rec in x replacewith let a = concat("the ", rec.color) in let b = concat(a, " ") in let c = concat(b, rec.type) in concat(c, " is in the barn")\nreturn a\n***' # ensure local variable is deleted in recursive statement
+        text8 = 'as principal admin password "admin" do\nset x = []\nappend to x with "one"\nappend to x with "two"\nappend to x with "three"\nappend to x with x\nforeach elem in x replacewith concat("this element has the value of ", elem)\nreturn x\n***'
+        text9 = 'as principal admin password "admin" do\nset x = []\nappend to x with "one"\nappend to x with "two"\nappend to x with "three"\nappend to x with x\nforeach elem in x replacewith []\nreturn x\n***' # can't evaluate the list to a list
+        text10 = 'as principal admin password "admin" do\nset x = []\nappend to x with "one"\nappend to x with "two"\nappend to x with "three"\nappend to x with x\nforeach elem in x replacewith x\nreturn x\n***'# can't evaluate the list to a list
+        text11 = 'as principal admin password "admin" do\nset x = []\nappend to x with "one"\nappend to x with "two"\nappend to x with "three"\nappend to x with x\nforeach elem in x replacewith {elem=elem}\nreturn x\n***'# evaluate a dict
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["LOCAL", "APPEND", "APPEND", "APPEND", "APPEND", "FOREACH", "RETURNING"],
+                "output": ["the color blue", "the color yellow", "the color orange", "the color green"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["LOCAL", "APPEND", "APPEND", "APPEND", "APPEND", "FOREACH", "RETURNING"],
+                "output": [
+                    {
+                        "fst": "bl",
+                        "snd": "ue"
+                    },
+                    {
+                        "fst": "ye",
+                        "snd": "llow"
+                    },
+                    {
+                        "fst": "or",
+                        "snd": "ange"
+                    },
+                    {
+                        "fst": "gr",
+                        "snd": "een"
+                    }
+                ]
+            },
+            {
+                "text": text3,
+                "exp_status": ["LOCAL", "APPEND", "APPEND", "APPEND", "APPEND", "FOREACH", "RETURNING"],
+                "output": [
+                    {
+                        "fst": "blue",
+                        "snd": ""
+                    },
+                    {
+                        "fst": "yello",
+                        "snd": "w"
+                    },
+                    {
+                        "fst": "orang",
+                        "snd": "e"
+                    },
+                    {
+                        "fst": "green",
+                        "snd": ""
+                    }
+                ]
+            },
+            {
+                "text": text4,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text5,
+                "exp_status": ["LOCAL", "APPEND", "APPEND", "APPEND", "APPEND", "FOREACH", "RETURNING"],
+                "output": ["0", "0", "", "0"]
+            },
+            {
+                "text": text6,
+                "exp_status": ["LOCAL", "APPEND", "APPEND", "APPEND", "APPEND", "FOREACH", "RETURNING"],
+                "output": ["the blue dog is in the barn", "the yellow cat is in the barn", "the orange tiger is in the barn", "the green bear is in the barn"]
+            },
+            {
+                "text": text7,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text8,
+                "exp_status": ["SET", "APPEND", "APPEND", "APPEND", "APPEND", "FOREACH", "RETURNING"],
+                "output": ["this element has the value of one", "this element has the value of two", "this element has the value of three", "this element has the value of one", "this element has the value of two", "this element has the value of three"]
+            },
+            {
+                "text": text9,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text10,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text11,
+                "exp_status": ["SET", "APPEND", "APPEND", "APPEND", "APPEND", "FOREACH", "RETURNING"],
+                "output": [
+                    {
+                        "elem": "one"
+                    },
+                    {
+                        "elem": "two"
+                    },
+                    {
+                        "elem": "three"
+                    },
+                    {
+                        "elem": "one"
+                    },
+                    {
+                        "elem": "two"
+                    },
+                    {
+                        "elem": "three"
+                    }
+                ]
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+
+class Test_Set_Delegation:
+
+    def test_delegate_all(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nset delegation all admin read->alice\nset delegation all admin write->bob\nset delegation all admin delegate->carly\nreturn "exiting"\n***'
+        text2 = 'as principal alice password "password" do\nreturn x\n***'
+        text3 = 'as principal alice password "password" do\nreturn y\n***'
+        text4 = 'as principal alice password "password" do\nset x = "a different str"\nreturn "exiting"\n***' # this should be denied
+        text5 = 'as principal alice password "password" do\nappend to y with "one"\nreturn y\n***' # this should be denied
+        text6 = 'as principal alice password "password" do\nset delegation x alice read->bob\nreturn "exiting"\n***' # this should be denied
+        text7 = 'as principal bob password "password" do\nreturn x\n***' # this should be denied
+        text8 = 'as principal bob password "password" do\nreturn y\n***' # this should be denied
+        text9 = 'as principal bob password "password" do\nset x = "a different str"\nreturn "exiting"\n***'
+        text10 = 'as principal bob password "password" do\nappend to y with "one"\nreturn "exiting"\n***'
+        text11 = 'as principal bob password "password" do\nset delegation x bob read->alice\nreturn "exiting"\n***' # this should be denied
+        text12 = 'as principal carly password "password" do\nreturn x\n***' # this should be denied
+        text13 = 'as principal carly password "password" do\nreturn y\n***' # this should be denied
+        text14 = 'as principal carly password "password" do\nset x = "something different"\nreturn "exiting"\n***' # this should be denied
+        text15 = 'as principal carly password "password" do\nset delegation all carly read->bob\nreturn "exiting"\n***'
+        text16 = 'as principal carly password "password" do\nset delegation all carly read->alice\nreturn "exiting"\n***'
+        text17 = 'as principal bob password "password" do\nreturn x\n***' # this should be denied 
+        text18 = 'as principal bob password "password" do\nreturn y\n***' # this should be denied
+        text19 = 'as principal admin password "admin" do\nset delegation all admin read -> carly\nreturn "exiting"\n***'
+        text20 = 'as principal bob password "password" do\nreturn x\n***' # now they have permission, should pass
+        text21 = 'as principal bob password "password" do\nreturn y\n***' # now they have permission, should pass
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "SET_DELEGATION", "SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text2,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text3,
+                "exp_status": ["RETURNING"],
+                "output": []
+            },
+            {
+                "text": text4,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text5,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text6,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text7,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text8,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text9,
+                "exp_status": ["SET", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text10,
+                "exp_status": ["APPEND", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text11,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text12,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text13,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text14,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text15,
+                "exp_status": ["SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text16,
+                "exp_status": ["SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text17,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text18,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text19,
+                "exp_status": ["SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text20,
+                "exp_status": ["RETURNING"],
+                "output": "a different str"
+            },
+            {
+                "text": text21,
+                "exp_status": ["RETURNING"],
+                "output": ["one"]
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+    def test_delegate_no_exist(self):
+        text1 = 'as principal admin password "admin" do\nlocal x = []\nset delegation x admin read->alice\nreturn "exiting"\n***' # fails because x doesn't exist as a global record
+        text2 = 'as principal admin password "admin" do\nset x = []\nset delegation x admin read->alice\nreturn "exiting"\n***' # fails because alice doesn't exist as a principal
+        text3 = 'as principal admin password "admin" do\nset x = []\nset delegation x alice read->admin\nreturn "exiting"\n***' # fails because alice doesn't exist as a principal
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text2,
+                "exp_status": ["FAILED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["FAILED"]
+            }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+    def test_admin_delegating(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nreturn "exiting"\n***'
+        text2 = 'as principal admin password "admin" do\nset delegation x alice read -> bob\nreturn "exiting"\n***'
+        text3 = 'as principal admin password "admin" do\nset delegation x alice delegate -> bob\nreturn "exiting"\n***'
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "SET", "SET", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text2,
+                "exp_status": ["SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text3,
+                "exp_status": ["SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
             }
         ]
 

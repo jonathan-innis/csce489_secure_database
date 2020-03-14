@@ -6,6 +6,7 @@ from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
 
 #TODO: Remove all the print statements from debugging
+#TODO: Exit should kill the database and needs to be integrated using the server side code
 
 GRAMMAR = """
 start:      _WS? auth _WS? EOL _WS? cmd _WS? EOL _WS? "***" _WS?
@@ -107,9 +108,9 @@ _WS: (" ")+
 %ignore COMMENT
 """
 
-# Have to make a separate grammar for "for_each" processing
+# Have to make a separate grammar for "foreach" and "filtereach" processing
 
-FOREACH_GRAMMAR = """
+EACH_GRAMMAR = """
 
 start:      expr                                                                            -> val_call
 
@@ -368,7 +369,7 @@ class T(Transformer):
     def foreach_call(self, args):
         try:
             print(args)
-            parser = Lark(FOREACH_GRAMMAR, parser='lalr')
+            parser = Lark(EACH_GRAMMAR, parser='lalr')
             tree = parser.parse(args[2])
 
             old_list = self.d.return_record(str(args[1]))
@@ -397,7 +398,7 @@ class T(Transformer):
 
     def filtereach_call(self, args):
         try:
-            parser = Lark(FOREACH_GRAMMAR, parser='lalr')
+            parser = Lark(EACH_GRAMMAR, parser='lalr')
             tree = parser.parse(args[2])
 
             old_list = self.d.return_record(str(args[1]))

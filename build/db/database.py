@@ -350,6 +350,21 @@ class Database:
             self.__permissions.add_permissions(tgt, from_principal, to_principal, right)
 
     def delete_delegation(self, tgt, from_principal, to_principal, right):
+        """
+        The function to remove a delegation of a given right from one principal to another on a given target
+
+        Parameters:
+            tgt (string): The target that we want to remove rights from (record_name or "all")
+            from_principal (string): Principal username that removes the delegation of the right
+            right (Right): The type of right that is being removed
+            to_principal (string): Principal username that has the right removed from them
+        
+        Errors:
+            SecurityViolation():
+                - If the from_principal or to_principal is not the current user or the current user isn't an admin
+                - If the current principal isn't admin and the from_principal doesn't have permission to delegate
+            RecordKeyError(): If the record name does not exist in the global store
+        """
 
         self.check_principal_set()
 
@@ -376,6 +391,16 @@ class Database:
             self.__permissions.delete_permission(tgt, from_principal, to_principal, right)
 
     def set_default_delegator(self, username):
+        """
+        The function to set the default delegator for the database
+
+        Paramaters:
+            username (string): The username of a principal we wish to change to the default delegator
+
+        Errors:
+            PrincipalKeyError(): If the username doesn't exist in the database
+            SecurityViolation(): If the current principal is not an admin user
+        """
 
         self.check_principal_set()
 
@@ -387,14 +412,14 @@ class Database:
 
     def reset(self):
         """
-        The function to exit from the database and reset the local variables in the database
+        The function to reset values after a program has completed on the database
         """
         self.__current_principal = None
         self.__local_store = Store()
 
     def exit(self):
         """
-        The function to exit from the database and reset the local variables in the database
+        The function to exit from the database and kill the database
         """
         self.check_principal_set()
 

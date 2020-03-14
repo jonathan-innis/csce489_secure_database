@@ -55,9 +55,11 @@ class Permissions:
                     self.__data[to_principal][record_name][right] = set()
                 self.__data[to_principal][record_name][right].add(from_principal)
         elif isinstance(rights, Right):
+            print(to_principal, self.__data[to_principal])
             if rights not in self.__data[to_principal][record_name]:
                 self.__data[to_principal][record_name][rights] = set()
             self.__data[to_principal][record_name][rights].add(from_principal)
+            print(to_principal, self.__data[to_principal])
         else:
             raise PermissionsKeyError("right type does not exist")
 
@@ -70,7 +72,7 @@ class Permissions:
         ex: user2 -> user1 -> admin
 
         Parameters:
-            record_name (string): The name of the given record
+            raw_record_name (string): The name of the given record (possibly with dots)
             principal (string): The username of the principal to check rights.
             right (Right): The given right to check on the given principal.
 
@@ -90,6 +92,8 @@ class Permissions:
 
         q.append(principal)
         visited.add(principal)
+
+        print(visited)
 
         # Doing a BFS to check permissions and ensure that permission have been passed on correctly
         while q:

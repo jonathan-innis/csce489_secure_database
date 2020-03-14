@@ -1,4 +1,4 @@
-import bcrypt
+import hashlib
 import copy
 
 
@@ -31,8 +31,7 @@ class Principal:
         """
 
         self.__username = username
-        self.__salt = bcrypt.gensalt()
-        self.__password = bcrypt.hashpw(password.encode('utf-8'), self.__salt)
+        self.__password = hashlib.sha256(password.encode('utf-8')).hexdigest()
         self.__admin = admin
         self.__accessible = accessible
 
@@ -71,7 +70,7 @@ class Principal:
         if not self.__accessible:
             return False
 
-        if bcrypt.checkpw(password.encode('utf-8'), self.__password):
+        if hashlib.sha256(password.encode('utf-8')).hexdigest() == self.__password:
             return True
         return False
 
@@ -84,5 +83,8 @@ class Principal:
             new_password (string): The new password for the principal
         """
 
-        self.__salt = bcrypt.gensalt()
-        self.__password = bcrypt.hashpw(new_password.encode('utf-8'), self.__salt)
+        if not self.__accessible:
+            return False
+
+        self.__password = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
+        return True

@@ -297,7 +297,6 @@ class Database:
         # Checks if the initial part of the record exists in the database
         elif self.__global_store.read_record(start_record_name) is not None:
             # Checks if the user has permission on the first part of the record
-            print("Record name: %s"%start_record_name)
             if self.check_permission(start_record_name, Right.READ):
                 # Checks if the full record exists in the database
                 if self.__global_store.read_record(raw_record_name) is not None:
@@ -338,11 +337,9 @@ class Database:
         # Iterates through the elements that a user has delegate rights on
         if tgt == 'all':
             from_rights = self.__permissions.return_permission_keys(from_principal)
-            print(from_principal, from_rights)
             for elem in from_rights:
                 # Checking whether the principal has delegate permission on object and element exists in global store
                 if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem) is not None:
-                    print(from_principal, to_principal, elem, right)
                     self.__permissions.add_permissions(elem, from_principal, to_principal, right)
         else:
             # Checking whether if the current user is not an admin user, if the from principal has delegate permissions

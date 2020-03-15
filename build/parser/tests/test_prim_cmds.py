@@ -1,10 +1,5 @@
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from db.database import Database
 from parser.parser import Parser
-
 
 def validate_tests(d, tests):
     p = Parser()
@@ -30,143 +25,6 @@ def validate_tests(d, tests):
         else:
             assert "output" not in ret[-1]
         d.reset()
-
-
-class Test_Basic_Parse:
-
-    def test_basic_parse(self):
-        d = Database("admin")
-
-        text = 'as principal admin password "admin" do\ncreate principal bob "BOBPWxxd"\nset x="my string"\nset y = { f1 = x, f2 = "field2" }\nset delegation x admin read -> bob\nreturn y.f1\n***'
-
-        tests = [
-            {
-                "text": text,
-                "exp_status": ["CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "RETURNING"],
-                "output": "my string"
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-    
-    def test_mult_commands(self):
-        d = Database("admin")
-
-        text1 = 'as principal admin password "admin" do\ncreate principal bob "password"\ncreate principal alice "password"\nset x="this is a string"\nset delegation all admin delegate->bob\nset delegation all admin read->bob\nreturn x\n***'
-        text2 = 'as principal bob password "password" do\nset y="another record"\nset delegation all bob read->alice\nreturn y\n***'
-        text3 = 'as principal alice password "password" do\nreturn x\n***'
-        text4 = 'as principal alice password "password" do\nreturn y\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "SET", "SET_DELEGATION", "SET_DELEGATION", "RETURNING"],
-                "output": "this is a string"
-            },
-            {
-                "text": text2,
-                "exp_status": ["SET", "SET_DELEGATION", "RETURNING"],
-                "output": "another record"
-            },
-            {
-                "text": text3,
-                "exp_status": ["RETURNING"],
-                "output": "this is a string"
-            },
-            {
-                "text": text4,
-                "exp_status": ["RETURNING"],
-                "output": "another record"
-            },
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-
-class Test_Exit_Parse:
-    
-    def test_exit_properly(self):
-        text1 = 'as principal admin password "admin" do\nexit\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["EXITING"]
-            }
-        ]
-
-        d = Database("admin")
-        validate_tests(d, tests)
-
-    def test_exit_fails(self):
-        text1 = 'as principal admin password "admin" do\ncreate principal bob "password"\nexit\n***'
-        text2 = 'as principal bob password "password" do\nexit\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["CREATE_PRINCIPAL", "EXITING"]
-            },
-            {
-                "text": text2,
-                "exp_status": ["DENIED"]
-            }
-        ]
-
-        d = Database("admin")
-        validate_tests(d, tests)
-
-
-class Test_Return_Parse:
-    
-    def test_return_elem(self):
-        text1 = 'as principal admin password "admin" do\nset x = "elem"\nreturn x\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["SET", "RETURNING"],
-                "output": "elem"
-            },
-        ]
-
-        d = Database("admin")
-        
-        validate_tests(d, tests)
-
-    def test_return_record(self):
-        text1 = 'as principal admin password "admin" do\n set x = {field1="element", field2="element"}\nreturn x\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["SET", "RETURNING"],
-                "output": {"field1": "element", "field2": "element"}
-            },
-        ]
-
-        d = Database("admin")
-        
-        validate_tests(d, tests)
-
-    def test_return_record_field(self):
-        text1 = 'as principal admin password "admin" do\n set x ={first="jonathan", last="innis"}\nreturn x.last\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["SET", "RETURNING"],
-                "output": "innis"
-            },
-        ]
-
-        d = Database("admin")
-        
-        validate_tests(d, tests)
 
 
 class Test_Auth_Parse:
@@ -761,7 +619,7 @@ class Test_For_Each():
         validate_tests(d, tests)
 
 
-class Test_Set_Delegation:
+class Test_Delegation:
 
     def test_delegate_all(self):
         text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nset delegation all admin read->alice\nset delegation all admin write->bob\nset delegation all admin delegate->carly\nreturn "exiting"\n***'
@@ -935,325 +793,123 @@ class Test_Set_Delegation:
         d = Database("admin")
         validate_tests(d, tests)
 
-
-class Test_Whitespace_Parse:
-    
-    def test_valid_whitespace(self):
-        text1 = '    as      principal      admin       password      "admin"       do\n   set    x    =    "this is a string"    \n       return       x    \n     ***   '
-        text2 = 'as principal admin password "admin" do\n     set     x     =    {       x      =     "elem"     ,     name      =      "jonny"     }    \n      return   x     .      x    \n    ***   '
-        text3 = 'as principal admin password "admin" do\n      set      x       =[]       \n        return      x   \n    ***      '
-        text4 = 'as principal admin password "admin" do\n      create      principal       jonny      "password"    \n return "exiting"\n ***'
-        text5 = 'as principal admin password "admin" do\n        change       password      admin        "another password"     \n        return       "exiting"     \n      ***     '
-        text6 = 'as principal admin password "another password" do\nset x=[]\n        append      to      x       with       {x="elem",name="anotherelem"}      \n        return        x       \n     ***     '
-        text7 = 'as principal admin password "another password" do\n         local          y         =           "elem"       \n        return       y      \n     ***      '
-        text8 = 'as principal admin password "another password" do\n        foreach        rec        in        x        replacewith       rec.x      \n       return      x      \n      ***      '
-        text9 = 'as principal admin password "another password" do\n      set        delegation      x      admin        read        ->      jonny       \n     return            "exiting"       \n       ***      '
-        text10 = 'as principal admin password "another password" do\n     delete         delegation       x          admin       read       ->          jonny       \n           return         "exiting"       \n       ***     '
-        text11 = 'as principal admin password "another password" do\n        default         delegator       =        admin        \n          return         "exiting"        \n       ***     '
-        text12 = 'as principal admin password "another password" do\n         set            z               =                     []            \n          append       to      z       with         "expression"   \n        append  to  z   with      "another expression"       \n        return z    \n   ***   '
+    def test_remove_delegation(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nset delegation x admin read -> alice\nset delegation x alice read -> bob\nset delegation x bob read -> carly\nreturn "exiting"\n***'
+        text2 = 'as principal bob password "password" do\ndelete delegation x admin read -> alice\nreturn "exiting"\n***' # this should raise denied
+        text3 = 'as principal bob password "password" do\nreturn x\n***'
+        text4 = 'as principal alice password "password" do\nreturn x\n***'
+        text5 = 'as principal carly password "password" do\nreturn x\n***'
+        text6 = 'as principal bob password "password" do\ndelete delegation x alice read -> bob\nreturn "exiting"\n***'
+        text7 = 'as principal alice password "password" do\nreturn x\n***'
+        text8 = 'as principal bob password "password" do\nreturn x\n***' # this should raise denied
+        text9 = 'as principal carly password "password" do\nreturn x\n***' # this should raise denied
 
         tests = [
-            {# changes the password of principal if the principal isn't "anyone"
+            {
                 "text": text1,
-                "exp_status": ["SET", "RETURNING"],
-                "output": "this is a string"
+                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "SET_DELEGATION", "SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
             },
             {
                 "text": text2,
-                "exp_status": ["SET", "RETURNING"],
-                "output": "elem"
+                "exp_status": ["DENIED"]
             },
             {
                 "text": text3,
-                "exp_status": ["SET", "RETURNING"],
-                "output": []
+                "exp_status": ["RETURNING"],
+                "output": "str"
             },
             {
                 "text": text4,
-                "exp_status": ["CREATE_PRINCIPAL", "RETURNING"],
-                "output": "exiting"
+                "exp_status": ["RETURNING"],
+                "output": "str"
             },
             {
                 "text": text5,
-                "exp_status": ["CHANGE_PASSWORD", "RETURNING"],
-                "output": "exiting"
+                "exp_status": ["RETURNING"],
+                "output": "str"
             },
             {
                 "text": text6,
-                "exp_status": ["SET", "APPEND", "RETURNING"],
-                "output": [{"x": "elem", "name": "anotherelem"}]
-            },
-            {
-                "text": text7,
-                "exp_status": ["LOCAL", "RETURNING"],
-                "output": "elem"
-            },
-            {
-                "text": text8,
-                "exp_status": ["FOREACH", "RETURNING"],
-                "output": ["elem"]
-            },
-            {
-                "text": text9,
-                "exp_status": ["SET_DELEGATION", "RETURNING"],
-                "output": "exiting"
-            },
-            {
-                "text": text10,
                 "exp_status": ["DELETE_DELEGATION", "RETURNING"],
                 "output": "exiting"
             },
             {
-                "text": text11,
-                "exp_status": ["DEFAULT_DELEGATOR", "RETURNING"],
+                "text": text7,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text8,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text9,
+                "exp_status": ["DENIED"]
+            },
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+    def test_remove_all_delegation(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nset delegation all admin delegate -> alice\nset delegation all admin read -> alice\nset delegation all alice read -> bob\nset delegation x bob read -> carly\nreturn "exiting"\n***'
+        text2 = 'as principal bob password "password" do\nreturn x\n***'
+        text3 = 'as principal bob password "password" do\nreturn y\n***'
+        text4 = 'as principal carly password "password" do\nreturn x\n***'
+        text5 = 'as principal carly password "password" do\nreturn y\n***'
+        text6 = 'as principal alice password "password" do\ndelete delegation all alice read -> bob\nreturn "exiting"\n***'
+        text7 = 'as principal bob password "password" do\nreturn x\n***' # this should raise denied
+        text8 = 'as principal bob password "password" do\nreturn y\n***' # this should raise denied
+        text9 = 'as principal carly password "password" do\nreturn x\n***' # this should raise denied
+        text10 = 'as principal carly password "password" do\nreturn y\n***' # this should raise denied
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "SET_DELEGATION", "SET_DELEGATION", "SET_DELEGATION", "RETURNING"],
                 "output": "exiting"
             },
             {
-                "text": text12,
-                "exp_status": ["SET", "APPEND", "APPEND", "RETURNING"],
-                "output": ["expression", "another expression"]
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-    def test_invalid_auth(self):
-        text1 = 'asprincipal admin password "admin" do\nreturn ""\n***'
-        text2 = 'as principaladmin password "admin" do\nreturn ""\n***'
-        text3 = 'as principal adminpassword "admin" do\nreturn ""\n***'
-        text4 = 'as principal admin password"admin" do\nreturn ""\n***'
-        
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"]
-            },
-            {
                 "text": text2,
-                "exp_status": ["FAILED"]
+                "exp_status": ["RETURNING"],
+                "output": "str"
             },
             {
                 "text": text3,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text4,
-                "exp_status": ["FAILED"]
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-    def test_invalid_return(self):
-        text1 = 'as principal admin password "admin" do\nreturn[]\n***'
-        text2 = 'as principal admin password "admin" do\nreturn""\n***'
-        text3 = 'as principal admin password "admin" do\nreturn{}\n***'
-        
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text2,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text3,
-                "exp_status": ["FAILED"]
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-    def test_invalid_create_principal(self):
-        text1 = 'as principal admin password "admin" do\ncreateprincipal bobby "password"\nreturn ""\n***'
-        text2 = 'as principal admin password "admin" do\ncreate principalbobby "password"\nreturn ""\n***'
-        text3 = 'as principal admin password "admin" do\ncreate principal bobby"password"\nreturn ""\n***'
-        
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text2,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text3,
-                "exp_status": ["FAILED"]
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-    def test_invalid_change_password(self):
-        text1 = 'as principal admin password "admin" do\nchangepassword admin "password"\nreturn ""\n***'
-        text2 = 'as principal admin password "admin" do\nchange passwordadmin "password"\nreturn ""\n***'
-        text3 = 'as principal admin password "admin" do\nchange password admin"password"\nreturn ""\n***'
-
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text2,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text3,
-                "exp_status": ["FAILED"]
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-    def test_invalid_set(self):
-        text1 = 'as principal admin password "admin" do\nsetx=""\nreturn x\n***'
-        text2 = 'as principal admin password "admin" do\nset x=""\nreturn x\n***'
-        text3 = 'as principal admin password "admin" do\nset x={y=x}\nreturn x\n***'
-        text4 = 'as principal admin password "admin" do\nset x=[]\nreturn x\n***'
-        text5 = 'as principal admin password "admin" do\nset x={y="another_elem",z="elem"}\nreturn x\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text2,
-                "exp_status": ["SET", "RETURNING"],
-                "output": ""
-            },
-            {
-                "text": text3,
-                "exp_status": ["SET", "RETURNING"],
-                "output": {"y": ""}
-            },
-            {
-                "text": text4,
-                "exp_status": ["SET", "RETURNING"],
+                "exp_status": ["RETURNING"],
                 "output": []
             },
             {
-                "text": text5,
-                "exp_status": ["SET", "RETURNING"],
-                "output": {"y": "another_elem", "z": "elem"}
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-    def test_invalid_append(self):
-        text1 = 'as principal admin password "admin" do\nset x=[]\nappendto x with "element"\nreturn x\n***'
-        text2 = 'as principal admin password "admin" do\nset x=[]\nappend tox with "element"\nreturn x\n***'
-        text3 = 'as principal admin password "admin" do\nset x=[]\nappend to xwith "element"\nreturn x\n***'
-        text4 = 'as principal admin password "admin" do\nset x=[]\nappend to x with"element"\nreturn x\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text2,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text3,
-                "exp_status": ["FAILED"]
-            },
-            {
                 "text": text4,
-                "exp_status": ["FAILED"]
-            },
-        ]
-
-        d = Database("admin")
-        validate_tests(d, tests)
-
-    def test_invalid_local(self):
-        text1 = 'as principal admin password "admin" do\nlocalx=""\nreturn x\n***'
-        text2 = 'as principal admin password "admin" do\nlocal x=""\nreturn x\n***'
-        text3 = 'as principal admin password "admin" do\nlocal x={y="elem"}\nreturn x\n***'
-        text4 = 'as principal admin password "admin" do\nlocal x=[]\nreturn x\n***'
-        text5 = 'as principal admin password "admin" do\nlocal x={y="another_elem",z="elem"}\nreturn x\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"]
-            },
-            {
-                "text": text2,
-                "exp_status": ["LOCAL", "RETURNING"],
-                "output": ""
-            },
-            {
-                "text": text3,
-                "exp_status": ["LOCAL", "RETURNING"],
-                "output": {"y": "elem"}
-            },
-            {
-                "text": text4,
-                "exp_status": ["LOCAL", "RETURNING"],
-                "output": []
+                "exp_status": ["RETURNING"],
+                "output": "str"
             },
             {
                 "text": text5,
-                "exp_status": ["LOCAL", "RETURNING"],
-                "output": {"y": "another_elem", "z": "elem"}
-            }
-        ]
-
-        d = Database("admin")
-
-        validate_tests(d, tests)
-
-
-class Test_Comments:
-
-    def test_valid_comment(self):
-        text1 = 'as principal admin password "admin" do //this is a comment\nreturn "returning"\n***'
-        text2 = 'as principal admin password "admin" do//this is a comment\nreturn "returning"\n***'
-        text3 = 'as principal admin password "admin" do\n// this is a full line comment that I want removed\nreturn "returning"\n***'
-        text4 = 'as principal admin password "admin" do\n    // this is an invalid full line comment\nreturn "returning"\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["RETURNING"],
-                "output": "returning"
+                "exp_status": ["DENIED"],
             },
             {
-                "text": text2,
-                "exp_status": ["RETURNING"],
-                "output": "returning"
+                "text": text6,
+                "exp_status": ["DELETE_DELEGATION", "RETURNING"],
+                "output": "exiting"
             },
             {
-                "text": text3,
-                "exp_status": ["RETURNING"],
-                "output": "returning"
+                "text": text7,
+                "exp_status": ["DENIED"]
             },
             {
-                "text": text4,
-                "exp_status": ["FAILED"],
-            }
+                "text": text8,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text9,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text10,
+                "exp_status": ["DENIED"]
+            },
         ]
 
         d = Database("admin")
@@ -1372,28 +1028,6 @@ class Test_Filtereach:
                         "name": "sandy"
                     }
                 ]
-            }
-        ]
-
-        d = Database("admin")
-        
-        validate_tests(d, tests)
-
-
-class Test_Failed_Parse:
-
-    def test_read_invalid_field(self):
-        text1 = 'as principal admin password "admin" do\nset x="element"\nreturn x.y\n***'
-        text2 = 'as principal admin password "admin" do\nset x=[]\nappend to x with "str"\nreturn x.elem\n***'
-
-        tests = [
-            {
-                "text": text1,
-                "exp_status": ["FAILED"],
-            },
-            {
-                "text": text2,
-                "exp_status": ["FAILED"]
             }
         ]
 

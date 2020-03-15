@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 from db.server import TCPHandler, socketserver
+from db.database import Database
+from functools import partial
 import sys
 
 if __name__ == "__main__":
@@ -15,5 +17,8 @@ if __name__ == "__main__":
     if(PORT < 1024 or PORT > 65535):
         exit()
 
-    server = socketserver.TCPServer((HOST, PORT), TCPHandler)
+    database = Database(password)
+    # https://stackoverflow.com/a/52046062
+    handler = partial(TCPHandler, database)
+    server = socketserver.TCPServer((HOST, PORT), handler)
     server.serve_forever()

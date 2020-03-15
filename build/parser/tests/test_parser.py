@@ -761,7 +761,7 @@ class Test_For_Each():
         validate_tests(d, tests)
 
 
-class Test_Set_Delegation:
+class Test_Delegation:
 
     def test_delegate_all(self):
         text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nset delegation all admin read->alice\nset delegation all admin write->bob\nset delegation all admin delegate->carly\nreturn "exiting"\n***'
@@ -930,6 +930,128 @@ class Test_Set_Delegation:
                 "exp_status": ["SET_DELEGATION", "RETURNING"],
                 "output": "exiting"
             }
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+    def test_remove_delegation(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nset delegation x admin read -> alice\nset delegation x alice read -> bob\nset delegation x bob read -> carly\nreturn "exiting"\n***'
+        text2 = 'as principal bob password "password" do\ndelete delegation x admin read -> alice\nreturn "exiting"\n***' # this should raise denied
+        text3 = 'as principal bob password "password" do\nreturn x\n***'
+        text4 = 'as principal alice password "password" do\nreturn x\n***'
+        text5 = 'as principal carly password "password" do\nreturn x\n***'
+        text6 = 'as principal bob password "password" do\ndelete delegation x alice read -> bob\nreturn "exiting"\n***'
+        text7 = 'as principal alice password "password" do\nreturn x\n***'
+        text8 = 'as principal bob password "password" do\nreturn x\n***' # this should raise denied
+        text9 = 'as principal carly password "password" do\nreturn x\n***' # this should raise denied
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "SET_DELEGATION", "SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text2,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text3,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text4,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text5,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text6,
+                "exp_status": ["DELETE_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text7,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text8,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text9,
+                "exp_status": ["DENIED"]
+            },
+        ]
+
+        d = Database("admin")
+        validate_tests(d, tests)
+
+    def test_remove_all_delegation(self):
+        text1 = 'as principal admin password "admin" do\ncreate principal alice "password"\ncreate principal bob "password"\ncreate principal carly "password"\nset x = "str"\nset y = []\nset delegation all admin delegate -> alice\nset delegation all admin read -> alice\nset delegation all alice read -> bob\nset delegation x bob read -> carly\nreturn "exiting"\n***'
+        text2 = 'as principal bob password "password" do\nreturn x\n***'
+        text3 = 'as principal bob password "password" do\nreturn y\n***'
+        text4 = 'as principal carly password "password" do\nreturn x\n***'
+        text5 = 'as principal carly password "password" do\nreturn y\n***'
+        text6 = 'as principal alice password "password" do\ndelete delegation all alice read -> bob\nreturn "exiting"\n***'
+        text7 = 'as principal bob password "password" do\nreturn x\n***' # this should raise denied
+        text8 = 'as principal bob password "password" do\nreturn y\n***' # this should raise denied
+        text9 = 'as principal carly password "password" do\nreturn x\n***' # this should raise denied
+        text10 = 'as principal carly password "password" do\nreturn y\n***' # this should raise denied
+
+        tests = [
+            {
+                "text": text1,
+                "exp_status": ["CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "CREATE_PRINCIPAL", "SET", "SET", "SET_DELEGATION", "SET_DELEGATION", "SET_DELEGATION", "SET_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text2,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text3,
+                "exp_status": ["RETURNING"],
+                "output": []
+            },
+            {
+                "text": text4,
+                "exp_status": ["RETURNING"],
+                "output": "str"
+            },
+            {
+                "text": text5,
+                "exp_status": ["DENIED"],
+            },
+            {
+                "text": text6,
+                "exp_status": ["DELETE_DELEGATION", "RETURNING"],
+                "output": "exiting"
+            },
+            {
+                "text": text7,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text8,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text9,
+                "exp_status": ["DENIED"]
+            },
+            {
+                "text": text10,
+                "exp_status": ["DENIED"]
+            },
         ]
 
         d = Database("admin")

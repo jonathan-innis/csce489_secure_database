@@ -384,7 +384,7 @@ class Database:
                 if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem) is not None:
                     self.__permissions.delete_permission(elem, from_principal, to_principal, right)
         else:
-            if not self.get_current_principal().is_admin() and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
+            if not self.get_current_principal().is_admin() and self.get_current_principal().get_username() != to_principal and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
             elif self.__global_store.read_record(tgt) is None:
                 raise RecordKeyError("record does not exist in the global store")

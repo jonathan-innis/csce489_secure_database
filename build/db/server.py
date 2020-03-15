@@ -1,5 +1,6 @@
 from parser.parser import Parser
 import socketserver
+import json
 
 
 class TCPHandler(socketserver.BaseRequestHandler):
@@ -8,11 +9,20 @@ class TCPHandler(socketserver.BaseRequestHandler):
         super().__init__(*args, **kwargs)
 
     def handle(self):
-        # self.request is the TCP socket connected to the client
-        self.data = self.request.recv(1000000).strip()  # limit of programs is 1 million chars - is this the correct way to measure that?
+        # http://code.activestate.com/recipes/408859/
+        End = '***'
+        total_data = []
+        data = ''
+        while True:
+            data = self.request.recv(8192)
+            data = data.decode()
+            if End in data:
+                total_data.append(data)
+                break
+            total_data.append(data)
+        result = ''.join(total_data)
         parser = Parser()
-        reply = parser.parse(self.__database, self.data.decode())
-        # print("{} wrote:".format(self.client_address[0]))
-        print(self.data.decode())
-        print(reply)
-        self.request.sendall(b"Message recieved: " + self.data + b"\n")
+        reply = parser.parse(self.__database, result.strip())
+        json_reply = json.dumps(reply)
+        self.request.sendall(json_reply.encode('utf-8') + b"\n")
+

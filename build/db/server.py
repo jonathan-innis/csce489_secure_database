@@ -11,13 +11,13 @@ class TCPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # http://code.activestate.com/recipes/408859/
-        End = '***'
+        END = '***'
         total_data = []
         data = ''
         while True:
             data = self.request.recv(8192)
             data = data.decode()
-            if End in data:
+            if END in data:
                 total_data.append(data)
                 break
             total_data.append(data)

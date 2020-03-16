@@ -22,4 +22,5 @@ if __name__ == "__main__":
     server = socketserver.TCPServer
     handler = partial(TCPHandler, database, server)
     server = socketserver.TCPServer((HOST, PORT), handler)
-    server.serve_forever()
+    while 1:
+        server.handle_request()

@@ -1,27 +1,52 @@
 #!/usr/bin/python3
 from db.server import TCPHandler, socketserver
 from db.database import Database
+from parser.parser import Parser
 from functools import partial
+import re
 import sys
+import signal
+
+def receiveSignal(signalNumber, frame):
+    exit(0)
 
 if __name__ == "__main__":
-    HOST, PORT = "localhost", 0
-    if(len(sys.argv) == 2):
-        PORT = int(sys.argv[1])
-        password = "admin"
-    elif(len(sys.argv) == 3):
-        PORT = int(sys.argv[1])
-        password = sys.argv[2]
-    else:
-        print("usage : ./server port [password]")
-    if(PORT < 1024 or PORT > 65535):
-        exit()
+    signal.signal(signal.SIGTERM, receiveSignal)
+    try:
+        HOST, PORT = "localhost", 0
+        if len(sys.argv) < 2 or len(sys.argv) > 3:
+            raise Exception("exiting: usage : ./server port [password]")
+        if str(sys.argv[1][0]) == "0" or not str(sys.argv[1]).isdigit():
+            raise Exception("exiting: port number is invalid")
+        elif len(sys.argv) == 2:
+            PORT = int(sys.argv[1])
+            password = "admin"
+        elif len(sys.argv) == 3:
+            PORT = int(sys.argv[1])
+            password = sys.argv[2]
 
-    database = Database(password)
-    # https://stackoverflow.com/a/52046062
-    server = socketserver.TCPServer
-    handler = partial(TCPHandler, database, server)
-    server = socketserver.TCPServer((HOST, PORT), handler)
-    
-    while True:
-        server.handle_request()
+        if PORT < 1024 or PORT > 65535:
+            raise Exception("exiting: port number is invalid")
+
+        pattern = re.compile("^[A-Za-z0-9_ ,;\.?!-]*$")
+        if not pattern.match(password):
+            raise Exception("exiting: password is invalid")
+
+        database = Database(password)
+        parser = Parser()
+        # https://stackoverflow.com/a/52046062
+        server = socketserver.TCPServer
+        handler = partial(TCPHandler, database, parser, server)
+        server = socketserver.TCPServer((HOST, PORT), handler)
+        
+        while True:
+            server.handle_request()
+        exit(0)
+
+
+    except OSError:
+        print("port not currently available for use")
+        exit(63)
+    except Exception as e:
+        print(e)
+        exit(255)

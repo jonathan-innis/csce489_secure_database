@@ -24,7 +24,7 @@ def validate_tests(d, tests):
             assert ret[-1]["output"] == test["output"]
         else:
             assert "output" not in ret[-1]
-        d.reset()
+        d.reset(rollback=False)
 
 
 class Test_Whitespace_Parse:

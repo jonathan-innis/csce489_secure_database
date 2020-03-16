@@ -1,6 +1,7 @@
 from db.store import Store, RecordKeyError
 from db.principal import Principal
 from db.permissions import Permissions, Right, ALL_RIGHTS
+import copy
 
 
 class PrincipalKeyError(Exception):
@@ -48,6 +49,13 @@ class Database:
         self.__global_store = Store()
         self.__permissions = Permissions()
 
+        # Backups of the elements
+        self.__backup_principals = copy.deepcopy(self.__principals)
+        self.__backup_default_delegator = copy.deepcopy(self.__default_delegator)
+        self.__backup_local_store = copy.deepcopy(self.__local_store)
+        self.__backup_global_store = copy.deepcopy(self.__global_store)
+        self.__backup_permissions = copy.deepcopy(self.__permissions)
+
         # Creates the admin
         p = Principal("admin", admin_password, admin=True)
         self.__principals["admin"] = p
@@ -94,6 +102,13 @@ class Database:
             SecurityViolation(): If the current principal is not set
         """
         self.get_current_principal()
+
+    def create_backups(self):
+        self.__backup_principals = copy.deepcopy(self.__principals)
+        self.__backup_default_delegator = copy.deepcopy(self.__default_delegator)
+        self.__backup_local_store = copy.deepcopy(self.__local_store)
+        self.__backup_global_store = copy.deepcopy(self.__global_store)
+        self.__backup_permissions = copy.deepcopy(self.__permissions)
 
     def create_principal(self, username, password):
         """
@@ -410,12 +425,18 @@ class Database:
             raise SecurityViolation("current principal is not admin user")
         self.__default_delegator = username
 
-    def reset(self):
+    def reset(self, rollback):
         """
         The function to reset values after a program has completed on the database
         """
         self.__current_principal = None
         self.__local_store = Store()
+        if rollback:
+            self.__principals = self.__backup_principals
+            self.__default_delegator = self.__backup_default_delegator
+            self.__local_store = self.__backup_local_store
+            self.__global_store = self.__backup_global_store
+            self.__permissions = self.__backup_permissions
 
     def exit(self):
         """

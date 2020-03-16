@@ -1,5 +1,6 @@
 from db.server import TCPHandler, socketserver
 from db.database import Database
+from parser.parser import Parser
 from functools import partial
 import socket
 import threading
@@ -31,7 +32,8 @@ class Test_TCPHandler:
     def test_data_communication(self):
         database = Database("admin")
         server = socketserver.TCPServer
-        handler = partial(TCPHandler, database, server)
+        parser = Parser()
+        handler = partial(TCPHandler, database, parser, server)
         server = example_server(handler)
         port = server.get_port()
         client = socket.create_connection(("localhost", port))
@@ -44,7 +46,8 @@ class Test_TCPHandler:
     def test_create_principal(self):
         database = Database("admin")
         server = socketserver.TCPServer
-        handler = partial(TCPHandler, database, server)
+        parser = Parser()
+        handler = partial(TCPHandler, database, parser, server)
         server = example_server(handler)
         port = server.get_port()
         client = socket.create_connection(("localhost", port))
@@ -60,7 +63,8 @@ class Test_TCPHandler:
     def test_create_principal_and_set_msg(self):
         database = Database("admin")
         server = socketserver.TCPServer
-        handler = partial(TCPHandler, database, server)
+        parser = Parser()
+        handler = partial(TCPHandler, database, parser, server)
         server = example_server(handler)
         port = server.get_port()
         client = socket.create_connection(("localhost", port))
@@ -77,7 +81,8 @@ class Test_TCPHandler:
     def test_timeout(self):
         database = Database("admin")
         server = socketserver.TCPServer
-        handler = partial(TCPHandler, database, server)
+        parser = Parser()
+        handler = partial(TCPHandler, database, parser, server)
         server = example_server(handler)
         port = server.get_port()
         client = socket.create_connection(("localhost", port))

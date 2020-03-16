@@ -238,7 +238,7 @@ class Test_Append_Record:
         d = Database("test")
         d.set_principal("admin", "test")
         d.set_record("x", ["record"])
-        d.reset()
+        d.reset(rollback=False)
 
         with pytest.raises(SecurityViolation) as excinfo:
             d.append_record("x", "this is a record")
@@ -404,7 +404,7 @@ class Test_Local_Record:
         d.set_local_record("x", "elem")
         assert d.return_record("x") == "elem"
 
-        d.reset()
+        d.reset(rollback=False)
 
         d.set_principal("admin", "test")
         with pytest.raises(RecordKeyError) as excinfo:
@@ -842,7 +842,7 @@ class Test_Reset:
         d.set_principal("admin", "test")
         assert d.get_current_principal().get_username() == "admin"
 
-        d.reset()
+        d.reset(rollback=False)
         with pytest.raises(SecurityViolation) as excinfo:
             d.get_current_principal()
         assert "current principal is not set" in str(excinfo.value)

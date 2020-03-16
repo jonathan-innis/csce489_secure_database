@@ -5,8 +5,6 @@ from db.permissions import Right
 from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
 
-#TODO: Remove all the print statements from debugging
-#TODO: Exit should kill the database and needs to be integrated using the server side code
 
 GRAMMAR = """
 start:      _WS? auth _WS? LF _WS? cmd _WS? LF _WS? "***" _WS?
@@ -190,28 +188,22 @@ class T(Transformer):
 
     def return_val_call(self, args):
         try:
-            print(args)
             val = str(args[0])
             return self.d.return_record(val)
         
         except SecurityViolation as e:
-            print(e)
             raise Exception("denied")
         except Exception as e:
-            print(e)
             raise Exception("failed")
 
     def return_dot_call(self, args):
         try:
             val = str(args[0]) + "." + str(args[1])
-            print(val)
             return self.d.return_record(val)
         
         except SecurityViolation as e:
-            print(e)
             raise Exception("denied")
         except Exception as e:
-            print(e)
             raise Exception("failed")
 
     def end_return_call(self, args):
@@ -338,10 +330,8 @@ class T(Transformer):
             self.ret.append({"status": "SET"})
         
         except SecurityViolation as e:
-            print(e)
             raise Exception("denied")
         except Exception as e:
-            print(e)
             raise Exception("failed")
 
     def append_call(self, args):
@@ -366,7 +356,6 @@ class T(Transformer):
     
     def foreach_call(self, args):
         try:
-            print(args)
             parser = Lark(EACH_GRAMMAR, parser='lalr')
             tree = parser.parse(args[2])
 
@@ -532,10 +521,8 @@ class Parser:
 
         # Catching Exceptions that are by the database and the parser
         except UnexpectedCharacters as e:
-            print(e)
             return [{"status": "FAILED"}]
         except Exception as e:
-            print(e)
             if str(e.__context__) == "denied":
                 return [{"status": "DENIED"}]
             else:

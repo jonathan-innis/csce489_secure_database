@@ -515,7 +515,6 @@ class Parser:
 
     def parse(self, database, text):
         try:
-            database.create_backups()
             tree = self.parser.parse(text)
             t = T(database)
             t.transform(tree)

@@ -4,7 +4,7 @@ from functools import partial
 import socket
 import threading
 import pytest
-
+import time
 
 class example_server():
     # nothing here for now?
@@ -71,5 +71,18 @@ class Test_TCPHandler:
         client.send(b'***')
         result = client.recv(1024)
         assert result == b"{'status': 'CREATE_PRINCIPAL'}\n{'status': 'SET'}\n{'status': 'RETURNING', 'output': 'success'}\n"
+        client.close()
+        server.stop()
+
+    def test_timeout(self):
+        database = Database("admin")
+        server = socketserver.TCPServer
+        handler = partial(TCPHandler, database, server)
+        server = example_server(handler)
+        port = server.get_port()
+        client = socket.create_connection(("localhost", port))
+        time.sleep(30)
+        result = client.recv(1024)
+        assert result == b'{"status":"TIMEOUT"}\n'
         client.close()
         server.stop()

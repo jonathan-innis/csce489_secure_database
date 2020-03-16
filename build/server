@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from db.server import TCPHandler, socketserver
+from handler.handler import TCPHandler, socketserver
 from db.database import Database
 from parser.parser import Parser
 from functools import partial

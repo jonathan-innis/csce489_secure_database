@@ -1,4 +1,4 @@
-from db.server import TCPHandler, socketserver
+from handler import *
 from db.database import Database
 from parser.parser import Parser
 from functools import partial

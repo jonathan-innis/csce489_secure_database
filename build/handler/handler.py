@@ -1,4 +1,3 @@
-from parser.parser import Parser
 import socketserver
 import socket
 import copy

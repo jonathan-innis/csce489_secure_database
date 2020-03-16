@@ -2,7 +2,6 @@ import sys
 from lark import Lark, tree, Transformer
 from lark.exceptions import UnexpectedCharacters
 from db.permissions import Right
-from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
 import copy
 

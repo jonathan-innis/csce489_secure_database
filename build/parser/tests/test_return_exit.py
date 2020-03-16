@@ -24,7 +24,6 @@ def validate_tests(d, tests):
             assert ret[-1]["output"] == test["output"]
         else:
             assert "output" not in ret[-1]
-        d.reset(rollback=False)
 
 
 class Test_Exit_Parse:

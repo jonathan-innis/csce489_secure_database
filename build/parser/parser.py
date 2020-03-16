@@ -352,6 +352,7 @@ class T(Transformer):
         except SecurityViolation as e:
             raise Exception("denied")
         except Exception as e:
+            print(e)
             raise Exception("failed")
     
     def foreach_call(self, args):
@@ -514,16 +515,23 @@ class Parser:
 
     def parse(self, database, text):
         try:
+            database.create_backups()
             tree = self.parser.parse(text)
             t = T(database)
             t.transform(tree)
+            database.reset(rollback=False)
             return t.ret
 
         # Catching Exceptions that are by the database and the parser
         except UnexpectedCharacters as e:
+            print(e)
+            database.reset(rollback=True)
             return [{"status": "FAILED"}]
         except Exception as e:
+            print(e)
             if str(e.__context__) == "denied":
+                database.reset(rollback=True)
                 return [{"status": "DENIED"}]
             else:
+                database.reset(rollback=True)
                 return [{"status": "FAILED"}]  

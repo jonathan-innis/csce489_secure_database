@@ -429,14 +429,14 @@ class Database:
         """
         The function to reset values after a program has completed on the database
         """
-        self.__current_principal = None
-        self.__local_store = Store()
         if rollback:
             self.__principals = self.__backup_principals
             self.__default_delegator = self.__backup_default_delegator
-            self.__local_store = self.__backup_local_store
             self.__global_store = self.__backup_global_store
             self.__permissions = self.__backup_permissions
+
+        self.__current_principal = None
+        self.__local_store = Store()
 
     def exit(self):
         """

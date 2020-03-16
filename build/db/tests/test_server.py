@@ -36,7 +36,7 @@ class Test_TCPHandler:
         client = socket.create_connection(("localhost", port))
         client.send(b'test***')
         result = client.recv(1024)
-        assert result == b'[{"status": "FAILED"}]\n'
+        assert result == b"{'status': 'FAILED'}\n"
         client.close()
         server.stop()
         
@@ -51,7 +51,7 @@ class Test_TCPHandler:
         client.send(b'   return "success"\n')
         client.send(b'***')
         result = client.recv(1024)
-        assert result == b'[{"status": "CREATE_PRINCIPAL"}, {"status": "RETURNING", "output": "success"}]\n'
+        assert result == b"{'status': 'CREATE_PRINCIPAL'}\n{'status': 'RETURNING', 'output': 'success'}\n"
         client.close()
         server.stop()
 
@@ -67,6 +67,6 @@ class Test_TCPHandler:
         client.send(b'   return "success"\n')
         client.send(b'***')
         result = client.recv(1024)
-        assert result == b'[{"status": "CREATE_PRINCIPAL"}, {"status": "SET"}, {"status": "RETURNING", "output": "success"}]\n'
+        assert result == b"{'status': 'CREATE_PRINCIPAL'}\n{'status': 'SET'}\n{'status': 'RETURNING', 'output': 'success'}\n"
         client.close()
         server.stop()

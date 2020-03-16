@@ -1,11 +1,11 @@
 from parser.parser import Parser
 import socketserver
-import json
 
 
 class TCPHandler(socketserver.BaseRequestHandler):
     def __init__(self, database, *args, **kwargs):
         self.__database = database
+        self.parser = Parser()
         super().__init__(*args, **kwargs)
 
     def handle(self):
@@ -21,8 +21,6 @@ class TCPHandler(socketserver.BaseRequestHandler):
                 break
             total_data.append(data)
         result = ''.join(total_data)
-        parser = Parser()
-        reply = parser.parse(self.__database, result.strip())
-        json_reply = json.dumps(reply)
-        self.request.sendall(json_reply.encode('utf-8') + b"\n")
-
+        reply = self.parser.parse(self.__database, result.strip())
+        final_reply = '\n'.join([str(elem) for elem in reply])
+        self.request.sendall(final_reply.encode('utf-8') + b"\n")

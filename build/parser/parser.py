@@ -9,13 +9,13 @@ from db.database import Database, PrincipalKeyError, SecurityViolation
 #TODO: Exit should kill the database and needs to be integrated using the server side code
 
 GRAMMAR = """
-start:      _WS? auth _WS? EOL _WS? cmd _WS? EOL _WS? "***" _WS?
+start:      _WS? auth _WS? LF _WS? cmd _WS? LF _WS? "***" _WS?
 
 auth:       "as" _WS "principal" _WS IDENT _WS "password" _WS S _WS "do"                    -> auth_call 
 
 cmd:        "exit"                                                                          -> exit_call                    
             | "return" _WS expr                                                             -> end_return_call
-            | prim_cmd _WS? EOL _WS? cmd _WS?
+            | prim_cmd _WS? LF _WS? cmd _WS?
             
 expr:       _LET _WS recursive                                                              -> val_call
             | "[]"                                                                          -> list_call                                                                        
@@ -90,10 +90,9 @@ DELEGATE: "delegate"
 _SET_DELEGATION: "set" _WS "delegation"
 _SET: "set"
 
-EOL : " "* ( NEWLINE | /\f/)
 COMMENT: (SAME_LINE_COMMENT | FULL_LINE_COMMENT)
 SAME_LINE_COMMENT: _WS? "//" /[A-Za-z0-9_ ,;\.?!-]*/
-FULL_LINE_COMMENT: EOL "//" /[A-Za-z0-9_ ,;\.?!-]*/
+FULL_LINE_COMMENT: LF "//" /[A-Za-z0-9_ ,;\.?!-]*/
 
 TGT: (ALL | IDENT)
 _LET.2: "let"
@@ -104,7 +103,7 @@ S: /"[ A-Za-z0-9_,;\.?!-]*"/
 _WS: (" ")+
 
 %import common.WORD
-%import common.NEWLINE
+%import common.LF
 %ignore COMMENT
 """
 
@@ -152,7 +151,6 @@ S: /"[ A-Za-z0-9_,;\.?!-]*"/
 _WS: (" ")+
 
 %import common.WORD
-%import common.NEWLINE
 
 """
 

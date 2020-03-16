@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from db.server import TCPHandler, socketserver
 from db.database import Database
+from parser.parser import Parser
 from functools import partial
 import sys
 
@@ -18,9 +19,10 @@ if __name__ == "__main__":
         exit()
 
     database = Database(password)
+    parser = Parser()
     # https://stackoverflow.com/a/52046062
     server = socketserver.TCPServer
-    handler = partial(TCPHandler, database, server)
+    handler = partial(TCPHandler, database, parser, server)
     server = socketserver.TCPServer((HOST, PORT), handler)
     
     while True:

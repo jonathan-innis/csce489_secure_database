@@ -4,6 +4,7 @@ from lark.exceptions import UnexpectedCharacters
 from db.permissions import Right
 from db.permissions import Right
 from db.database import Database, PrincipalKeyError, SecurityViolation
+import copy
 
 
 GRAMMAR = """
@@ -514,6 +515,7 @@ class Parser:
 
     def parse(self, database, text):
         try:
+            database.create_backups()
             tree = self.parser.parse(text)
             t = T(database)
             t.transform(tree)

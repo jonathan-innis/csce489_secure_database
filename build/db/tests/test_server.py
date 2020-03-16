@@ -30,7 +30,8 @@ class Test_TCPHandler:
 
     def test_data_communication(self):
         database = Database("admin")
-        handler = partial(TCPHandler, database)
+        server = socketserver.TCPServer
+        handler = partial(TCPHandler, database, server)
         server = example_server(handler)
         port = server.get_port()
         client = socket.create_connection(("localhost", port))
@@ -42,7 +43,8 @@ class Test_TCPHandler:
         
     def test_create_principal(self):
         database = Database("admin")
-        handler = partial(TCPHandler, database)
+        server = socketserver.TCPServer
+        handler = partial(TCPHandler, database, server)
         server = example_server(handler)
         port = server.get_port()
         client = socket.create_connection(("localhost", port))
@@ -57,7 +59,8 @@ class Test_TCPHandler:
 
     def test_create_principal_and_set_msg(self):
         database = Database("admin")
-        handler = partial(TCPHandler, database)
+        server = socketserver.TCPServer
+        handler = partial(TCPHandler, database, server)
         server = example_server(handler)
         port = server.get_port()
         client = socket.create_connection(("localhost", port))

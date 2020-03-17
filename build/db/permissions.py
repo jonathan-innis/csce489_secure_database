@@ -70,7 +70,7 @@ class Permissions:
         ex: user2 -> user1 -> admin
 
         Parameters:
-            raw_record_name (string): The name of the given record (possibly with dots)
+            record_name (string): The name of the given record
             principal (string): The username of the principal to check rights.
             right (Right): The given right to check on the given principal.
 
@@ -80,11 +80,13 @@ class Permissions:
 
         if principal == "admin":
             return True
-
-        # Checking if the principal anyone has rights on the record with the given right
-        if self.__data.get("anyone", dict()).get(record_name, dict()).get(right, None):
+        if self.check_permission_helper(record_name, "anyone", right):
             return True
+        if self.check_permission_helper(record_name, principal, right):
+            return True
+        return False
 
+    def check_permission_helper(self, record_name, principal, right):
         visited = set()
         q = deque()
 
@@ -99,7 +101,7 @@ class Permissions:
 
             if delegators:
                 for delegator in delegators:
-                    if delegator == "admin" or delegator == "anyone":
+                    if delegator == "admin":
                         return True
                     if delegator not in visited:
                         q.append(delegator)

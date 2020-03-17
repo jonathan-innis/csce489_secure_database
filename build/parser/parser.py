@@ -352,7 +352,6 @@ class T(Transformer):
         except SecurityViolation as e:
             raise Exception("denied")
         except Exception as e:
-            print(e)
             raise Exception("failed")
     
     def foreach_call(self, args):
@@ -524,11 +523,9 @@ class Parser:
 
         # Catching Exceptions that are by the database and the parser
         except UnexpectedCharacters as e:
-            print(e)
             database.reset(rollback=True)
             return [{"status": "FAILED"}]
         except Exception as e:
-            print(e)
             if str(e.__context__) == "denied":
                 database.reset(rollback=True)
                 return [{"status": "DENIED"}]

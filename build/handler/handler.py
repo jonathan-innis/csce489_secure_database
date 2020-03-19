@@ -1,6 +1,7 @@
 import socketserver
 import socket
 import copy
+import json
 
 END = '***'
 
@@ -36,7 +37,8 @@ class TCPHandler(socketserver.BaseRequestHandler):
             for elem in reply:
                 if elem['status'] == 'EXITING':
                     should_exit = True
-                parsed_elems.append(str(elem))
+                print(str(elem))
+                parsed_elems.append(str(json.dumps(elem)))
 
             final_reply = '\n'.join(parsed_elems)
             self.request.sendall(final_reply.encode('utf-8') + b"\n")
@@ -45,4 +47,4 @@ class TCPHandler(socketserver.BaseRequestHandler):
                 self.server._BaseServer__shutdown_request = True
 
         except socket.timeout:
-            self.request.sendall(b'{"status":"TIMEOUT"}' + b"\n")
+            self.request.sendall('{"status":"TIMEOUT"}\n'.encode('utf-8'))

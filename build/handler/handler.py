@@ -37,7 +37,6 @@ class TCPHandler(socketserver.BaseRequestHandler):
             for elem in reply:
                 if elem['status'] == 'EXITING':
                     should_exit = True
-                print(str(elem))
                 parsed_elems.append(str(json.dumps(elem)))
 
             final_reply = '\n'.join(parsed_elems)

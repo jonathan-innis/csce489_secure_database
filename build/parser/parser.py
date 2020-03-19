@@ -66,10 +66,12 @@ expr_str:   _LET _WS IDENT _WS? "=" _WS? expr_str _WS "in" _WS expr_str         
             | func_str                                                                      -> val_call
             | val_str                                                                       -> val_call
 
-field_str:  IDENT _WS? "=" _WS? val_str                                                     -> field_str_base_call
-            | IDENT _WS? "=" _WS? val_str _WS? "," _WS? field_str                           -> field_str_recur_call
+field_str:  base_field_str _WS?                                                             -> val_call
+            | base_field_str _WS? "," _WS? field_str                                        -> field_str_recur_call
 
-val_str:    IDENT                                                                           -> val_call
+base_field_str: IDENT _WS? "=" _WS? val_str                                                 -> field_str_base_call
+
+val_str:    IDENT _WS?                                                                      -> val_call
             | IDENT _WS? "." _WS? IDENT                                                     -> dot_str_call
             | S                                                                             -> val_call
 
@@ -485,7 +487,7 @@ class T(Transformer):
         return args[0] + "=" + args[1]
 
     def field_str_recur_call(self, args):
-        return args[0] + "=" + args[1] + "," + args[2]
+        return args[0] + "," + args[1]
 
     def dot_str_call(self, args):
         return args[0] + "." + args[1]

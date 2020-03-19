@@ -145,8 +145,8 @@ value:      IDENT _WS?                                                          
 TGT: (ALL | IDENT)
 ALL: "all"
 _LET.2: "let"
-IDENT: /(?!all|append|as|change|create|default|delegate|delegation|delegator|delete|do|exit|foreach|in|local|password|principal|read|replacewith|return|set|to|write|split|concat|tolower|notequal|equal|filtereach|with|let)([A-Za-z][A-Za-z0-9_]*)/                                  
-S: /"[ A-Za-z0-9_,;\.?!-]*"/
+IDENT: /(?!all|append|as|change|create|default|delegate|delegation|delegator|delete|do|exit|foreach|in|local|password|principal|read|replacewith|return|set|to|write|split|concat|tolower|notequal|equal|filtereach|with|let)([A-Za-z][A-Za-z0-9_]{0,65534})/                                  
+S: /"[ A-Za-z0-9_,;\.?!-]{0,255}"/
 
 _WS: (" ")+
 
@@ -183,7 +183,10 @@ class T(Transformer):
             raise Exception("failed")
 
     def string_call(self, args):
-        return str(args[0].strip('"'))
+        elem = str(args[0].strip('"'))
+        if len(elem) > 65535:
+            raise Exception("failed")
+        return elem
 
     def val_call(self, args):
         return args[0]

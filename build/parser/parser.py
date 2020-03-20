@@ -7,13 +7,14 @@ import copy
 
 
 GRAMMAR = """
-start:      _WS? auth _WS? LF _WS? cmd _WS? LF _WS? "***" _WS?
+start:      _WS? auth _WS? LF cmd* _WS? end_cmd _WS? LF _WS? "***" _WS?
 
 auth:       "as" _WS "principal" _WS IDENT _WS "password" _WS S _WS "do"                    -> auth_call 
 
-cmd:        "exit"                                                                          -> exit_call                    
+end_cmd:    "exit"                                                                          -> exit_call
             | "return" _WS expr                                                             -> end_return_call
-            | prim_cmd _WS? LF _WS? cmd _WS?
+
+cmd:        _WS? prim_cmd _WS? LF
             
 expr:       _LET _WS recursive                                                              -> val_call
             | "[]"                                                                          -> list_call                                                                        

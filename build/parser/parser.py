@@ -18,16 +18,16 @@ cmd:        "exit"                                                              
 expr:       _LET _WS recursive                                                              -> val_call
             | "[]"                                                                          -> list_call                                                                        
             | dict                                                                          -> val_call
-            | func                                                                          -> val_call
             | value                                                                         -> val_call
+            | func                                                                          -> val_call
 
 dict:       "{" _WS? fieldvals _WS? "}"                                                     -> val_call
 
-func:       "split" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                        -> split_call
-            | "concat" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                     -> concat_call
-            | "tolower" _WS? "(" _WS? value _WS? ")"                                        -> tolower_call
-            | "equal" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                      -> equal_call
-            | "notequal" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                   -> notequal_call
+func:       _SPLIT _WS? value _WS? "," _WS? value _WS? ")"                                  -> split_call
+            | _CONCAT _WS? value _WS? "," _WS? value _WS? ")"                               -> concat_call
+            | _TOLOWER _WS? value _WS? ")"                                                  -> tolower_call
+            | _EQUAL _WS? value _WS? "," _WS? value _WS? ")"                                -> equal_call
+            | _NOTEQUAL _WS? value _WS? "," _WS? value _WS? ")"                             -> notequal_call
 
 recursive:   recursive_start _WS recursive_end                                              -> recursive_call
 
@@ -71,15 +71,15 @@ field_str:  base_field_str _WS?                                                 
 
 base_field_str: IDENT _WS? "=" _WS? val_str                                                 -> field_str_base_call
 
+func_str:   _SPLIT _WS? val_str _WS? "," _WS? val_str _WS? ")"                              -> split_str_call
+            | _CONCAT _WS? val_str _WS? "," _WS? val_str _WS? ")"                           -> concat_str_call
+            | _TOLOWER _WS? val_str _WS? ")"                                                -> tolower_str_call
+            | _EQUAL _WS? val_str _WS? "," _WS? val_str _WS? ")"                            -> equal_str_call
+            | _NOTEQUAL _WS? val_str _WS? "," _WS? val_str _WS? ")"                         -> notequal_str_call
+
 val_str:    IDENT _WS?                                                                      -> val_call
             | IDENT _WS? "." _WS? IDENT                                                     -> dot_str_call
             | S                                                                             -> val_call
-
-func_str:   "split" _WS? "(" _WS? val_str _WS? "," _WS? val_str _WS? ")"                    -> split_str_call
-            | "concat" _WS? "(" _WS? val_str _WS? "," _WS? val_str _WS? ")"                 -> concat_str_call
-            | "tolower" _WS? "(" _WS? val_str _WS? ")"                                      -> tolower_str_call
-            | "equal" _WS? "(" _WS? val_str _WS? "," _WS? val_str _WS? ")"                  -> equal_str_call
-            | "notequal" _WS? "(" _WS? val_str _WS? "," _WS? val_str _WS? ")"               -> notequal_str_call
 
 
 READ: "read"
@@ -96,8 +96,14 @@ FULL_LINE_COMMENT: LF "//" /[A-Za-z0-9_ ,;\.?!-]*/
 
 TGT: (ALL | IDENT)
 _LET.2: "let"
+_CONCAT.2: "concat" _WS? "("
+_TOLOWER.2: "tolower" _WS? "("
+_EQUAL.2: "equal" _WS? "("
+_NOTEQUAL.2: "notequal" _WS? "("
+_SPLIT.2: "split" _WS? "("
+
 ALL: "all"
-IDENT: /(?!all|append|as|change|create|default|delegate|delegation|delegator|delete|do|exit|foreach|in|local|password|principal|read|replacewith|return|set|to|write|split|concat|tolower|notequal|equal|filtereach|with|let)([A-Za-z][A-Za-z0-9_]{0,65534})/                                  
+IDENT: /(?!all\s|all\s*=|all\s*\.|append\s|append\s*=|append\s*\.|as\s|as\s*=|as\s*\.|change\s|change\s*=|change\s*\.|create\s|create\s*=|create\s*\.|default\s|default\s*=|default\s*\.|delegate\s|delegate\s*=|delegate\s*\.|delegation\s|delegation\s*=|delegation\s*\.|delegator\s|delegator\s*=|delegator\s*\.|delete\s|delete\s*=|delete\s*\.|do\s|do\s*=|do\s*\.|exit\s|exit\s*=|exit\s*\.|foreach\s|foreach\s*=|foreach\s*\.|in\s|in\s*=|in\s*\.|local\s|local\s*=|local\s*\.|password\s|password\s*=|password\s*\.|principal\s|principal\s*=|principal\s*\.|read\s|read\s*=|read\s*\.|replacewith\s|replacewith\s*=|replacewith\s*\.|return\s|return\s*=|return\s*\.|set\s|set\s*=|set\s*\.|to\s|to\s*=|to\s*\.|write\s|write\s*=|write\s*\.|split\s|split\s*=|split\s*\.|concat\s|concat\s*=|concat\s*\.|tolower\s|tolower\s*=|tolower\s*\.|notequal\s|notequal\s*=|notequal\s*\.|equal\s|equal\s*=|equal\s*\.|filtereach\s|filtereach\s*=|filtereach\s*\.|with\s|with\s*=|with\s*\.|let\s|let\s*=|let\s*\.)([A-Za-z][A-Za-z0-9_]*)/                                  
 S: /"[ A-Za-z0-9_,;\.?!-]{0,255}"/
 
 _WS: (" ")+
@@ -121,7 +127,7 @@ expr:       _LET _WS recursive                                                  
 
 dict:       "{" _WS? fieldvals _WS? "}"                                                     -> val_call
 
-func:       "split" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                        -> split_call
+func:       "split" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                      -> split_call
             | "concat" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                     -> concat_call
             | "tolower" _WS? "(" _WS? value _WS? ")"                                        -> tolower_call
             | "equal" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                      -> equal_call
@@ -145,7 +151,7 @@ value:      IDENT _WS?                                                          
 TGT: (ALL | IDENT)
 ALL: "all"
 _LET.2: "let"
-IDENT: /(?!all|append|as|change|create|default|delegate|delegation|delegator|delete|do|exit|foreach|in|local|password|principal|read|replacewith|return|set|to|write|split|concat|tolower|notequal|equal|filtereach|with|let)([A-Za-z][A-Za-z0-9_]*)/                                  
+IDENT: /(?!all\s|all\s*=|all\s*\.|append\s|append\s*=|append\s*\.|as\s|as\s*=|as\s*\.|change\s|change\s*=|change\s*\.|create\s|create\s*=|create\s*\.|default\s|default\s*=|default\s*\.|delegate\s|delegate\s*=|delegate\s*\.|delegation\s|delegation\s*=|delegation\s*\.|delegator\s|delegator\s*=|delegator\s*\.|delete\s|delete\s*=|delete\s*\.|do\s|do\s*=|do\s*\.|exit\s|exit\s*=|exit\s*\.|foreach\s|foreach\s*=|foreach\s*\.|in\s|in\s*=|in\s*\.|local\s|local\s*=|local\s*\.|password\s|password\s*=|password\s*\.|principal\s|principal\s*=|principal\s*\.|read\s|read\s*=|read\s*\.|replacewith\s|replacewith\s*=|replacewith\s*\.|return\s|return\s*=|return\s*\.|set\s|set\s*=|set\s*\.|to\s|to\s*=|to\s*\.|write\s|write\s*=|write\s*\.|split\s|split\s*=|split\s*\.|concat\s|concat\s*=|concat\s*\.|tolower\s|tolower\s*=|tolower\s*\.|notequal\s|notequal\s*=|notequal\s*\.|equal\s|equal\s*=|equal\s*\.|filtereach\s|filtereach\s*=|filtereach\s*\.|with\s|with\s*=|with\s*\.|let\s|let\s*=|let\s*\.)([A-Za-z][A-Za-z0-9_]*)/                                  
 S: /"[ A-Za-z0-9_,;\.?!-]*"/
 
 _WS: (" ")+

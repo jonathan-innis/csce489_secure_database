@@ -10,10 +10,10 @@ import signal
 class ExitSignal(Exception):
     pass
 
-def receiveSignal(signalNumber, frame):
-    raise ExitSignal()
-
 if __name__ == "__main__":
+    def receiveSignal(signalNumber, frame):
+        raise ExitSignal()
+    
     signal.signal(signal.SIGTERM, receiveSignal)
     try:
         HOST, PORT = "localhost", 0

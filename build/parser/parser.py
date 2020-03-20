@@ -430,7 +430,7 @@ class T(Transformer):
 
     def set_delegation_call(self, args):
         try:
-            self.d.set_delegation(args[0], str(args[1]), str(args[3]), args[2])
+            self.d.set_delegation(str(args[0]), str(args[1]), str(args[3]), args[2])
             self.ret.append({"status": "SET_DELEGATION"})
 
         except SecurityViolation as e:
@@ -440,7 +440,7 @@ class T(Transformer):
 
     def delete_delegation_call(self, args):
         try:
-            self.d.delete_delegation(args[0], str(args[1]), str(args[3]), args[2])
+            self.d.delete_delegation(str(args[0]), str(args[1]), str(args[3]), args[2])
             self.ret.append({"status": "DELETE_DELEGATION"})
         
         except SecurityViolation as e:

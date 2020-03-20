@@ -1,6 +1,7 @@
 from db.store import Store, RecordKeyError
 from db.principal import Principal
 from db.permissions import Permissions, Right, ALL_RIGHTS
+from db.cache import Cache
 import copy
 
 
@@ -48,6 +49,7 @@ class Database:
         self.__local_store = Store()
         self.__global_store = Store()
         self.__permissions = Permissions()
+        self.__cache = Cache()
 
         # Backups of the elements
         self.__backup_principals = copy.deepcopy(self.__principals)
@@ -195,7 +197,13 @@ class Database:
         """
         self.check_principal_set()
 
-        return self.__permissions.check_permission(record_name, self.get_current_principal().get_username(), right)
+        if self.__cache.check(record_name, right):
+            return True
+
+        has_permission = self.__permissions.check_permission(record_name, self.get_current_principal().get_username(), right)
+        if has_permission:
+            self.__cache.update(record_name, right)
+        return has_permission
 
     def delete_record(self, record_name):
         self.check_principal_set()
@@ -398,12 +406,14 @@ class Database:
                 # Checking whether the principal has delegate permission on object and element exists in global store
                 if self.__permissions.check_permission(elem, from_principal, Right.DELEGATE) and self.__global_store.read_record(elem) is not None:
                     self.__permissions.delete_permission(elem, from_principal, to_principal, right)
+                    self.__cache.reset(elem, right) # Resetting the cached permissions because they become invalid now
         else:
             if not self.get_current_principal().is_admin() and self.get_current_principal().get_username() != to_principal and not self.__permissions.check_permission(tgt, from_principal, Right.DELEGATE):
                 raise SecurityViolation("principal specified does not have permissions to delegate")
             elif self.__global_store.read_record(tgt) is None:
                 raise RecordKeyError("record does not exist in the global store")
             self.__permissions.delete_permission(tgt, from_principal, to_principal, right)
+            self.__cache.reset(tgt, right)
 
     def set_default_delegator(self, username):
         """
@@ -437,6 +447,7 @@ class Database:
 
         self.__current_principal = None
         self.__local_store = Store()
+        self.__cache = Cache()
 
     def exit(self):
         """

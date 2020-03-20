@@ -1,4 +1,5 @@
 import copy
+import gc
 
 
 class AppendException(Exception):
@@ -32,7 +33,7 @@ class Store:
             expr (string | dict | list): The value or reference associated with the record
         """
 
-        self.__store[record_name] = value
+        self.__store[record_name] = copy.deepcopy(value)
 
     def append_record(self, record_name, value):
         """
@@ -53,9 +54,13 @@ class Store:
             raise AppendException("unable to append record to non-list object")
         else:
             if isinstance(value, list):
-                record += value
+                gc.disable()
+                record.extend(value)
+                gc.enable()
             else:
+                gc.disable()
                 record.append(value)
+                gc.enable()
         self.__store[record_name] = record
 
     def read_record(self, record_name):
@@ -75,7 +80,7 @@ class Store:
             if elem not in record:
                 return None
             record = record[elem]
-        return copy.deepcopy(record)
+        return record
 
     def delete_record(self, record_name):
         """

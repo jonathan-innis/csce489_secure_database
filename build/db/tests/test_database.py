@@ -217,6 +217,7 @@ class Test_Set_Record:
         d.set_record("x", "this is a record")
         assert d.return_record("x") == "this is a record"
 
+        d.reset(rollback=False)
         d.set_principal("user1", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -451,6 +452,7 @@ class Test_Set_Delegate_Permission:
             d.set_delegation("x", "bob", "alice", Right.READ)
         assert "principal specified does not have permissions to delegate" in str(excinfo.value)
 
+        d.reset(rollback=False)
         d.set_principal("alice", "password")
 
         with pytest.raises(SecurityViolation) as excinfo:
@@ -536,6 +538,7 @@ class Test_Set_Delegate_Permission:
 
         d.set_delegation("all", "alice", "doug", Right.READ)
 
+        d.reset(rollback=False)
         d.set_principal("doug", "password")
 
         d.return_record("x") == "element"
@@ -778,6 +781,7 @@ class Test_Delete_Delegation:
 
         d.set_delegation("x", "admin", "bob", Right.READ)
 
+        d.reset(rollback=False)
         d.set_principal("bob", "password")
 
         assert d.return_record("x") == "element"
@@ -825,6 +829,7 @@ class Test_Default_Delegator:
 
         d.create_principal("alice", "password")
 
+        d.reset(rollback=False)
         d.set_principal("alice", "password")
 
         d.return_record("x") == "element"

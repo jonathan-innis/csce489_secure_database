@@ -7,8 +7,11 @@ import re
 import sys
 import signal
 
+class ExitSignal(Exception):
+    pass
+
 def receiveSignal(signalNumber, frame):
-    exit(0)
+    raise ExitSignal()
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, receiveSignal)
@@ -47,6 +50,12 @@ if __name__ == "__main__":
     except OSError:
         print("port not currently available for use")
         exit(63)
+    except ExitSignal:
+        print("received SIGTERM, exiting")
+        exit(0)
     except Exception as e:
         print(e)
         exit(255)
+    
+    finally:
+        server._BaseServer__shutdown_request = True

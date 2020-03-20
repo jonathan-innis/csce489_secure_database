@@ -44,6 +44,9 @@ class TCPHandler(socketserver.BaseRequestHandler):
             # https://stackoverflow.com/a/36017741
             if should_exit:
                 self.server._BaseServer__shutdown_request = True
+                self.server.server_close()
+
 
         except socket.timeout:
             self.request.sendall('{"status":"TIMEOUT"}\n'.encode('utf-8'))
+            self.server._BaseServer__shutdown_request = True

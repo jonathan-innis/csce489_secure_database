@@ -6,6 +6,15 @@ import json
 
 END = '***'
 
+class StoppableServer(socketserver.TCPServer):
+    def receiveSignal(self, signalNumber, frame):
+        print("received SIGTERM, exiting")
+        self._BaseServer__shutdown_request = True
+
+    def run(self):
+        signal.signal(signal.SIGTERM, self.receiveSignal)
+        self.serve_forever()
+
 
 class TCPHandler(socketserver.BaseRequestHandler):
     def __init__(self, database, parser, server, *args, **kwargs):

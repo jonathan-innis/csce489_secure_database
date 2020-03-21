@@ -1,21 +1,11 @@
 #!/usr/bin/python3
-from handler.handler import TCPHandler, socketserver
+from handler.handler import TCPHandler, socketserver, StoppableServer
 from db.database import Database
 from parser.parser import Parser
 from functools import partial
 import re
 import signal
 import sys
-
-
-class StoppableServer(socketserver.TCPServer):
-    def receiveSignal(self, signalNumber, frame):
-        print("received SIGTERM, exiting")
-        self._BaseServer__shutdown_request = True
-
-    def run(self):
-        signal.signal(signal.SIGTERM, self.receiveSignal)
-        self.serve_forever()
 
 if __name__ == "__main__":
     try:

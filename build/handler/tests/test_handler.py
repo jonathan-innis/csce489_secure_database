@@ -10,7 +10,7 @@ import json
 
 
 def validate_tests(d, tests):
-    server = socketserver.TCPServer
+    server = StoppableServer
     parser = Parser()
     handler = partial(TCPHandler, d, parser, server)
     server = example_server(handler)
@@ -52,7 +52,7 @@ class example_server():
 
     def __init__(self, handler):
         # allow_reuse_address = True
-        self.server = socketserver.TCPServer(('localhost', 0), handler)
+        self.server = StoppableServer(('localhost', 0), handler)
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.start()
         self.__port = self.server.server_address[1]
@@ -62,8 +62,7 @@ class example_server():
         return self.__port
 
     def stop(self):
-        self.server.shutdown()
-        self.server.server_close()
+        self.server._BaseServer__shutdown_request = True
 
 
 class Test_TCPHandler:
@@ -115,6 +114,13 @@ class Test_TCPHandler:
         client = socket.create_connection(("localhost", port))
         time.sleep(30)
         result = client.recv(1024)
-        assert result == b'{"status":"TIMEOUT"}\n'
+        assert result == b'{"status": "TIMEOUT"}\n'
+        tests = [
+            {
+                "text": 'as principal admin password "admin" do\nexit\n***',
+                "exp_status": ["EXITING"],
+            }
+        ]
+        validate_tests(database, tests)
         client.close()
         server.stop()

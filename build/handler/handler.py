@@ -52,7 +52,6 @@ class TCPHandler(socketserver.BaseRequestHandler):
 
         except socket.timeout:
             self.request.sendall('{"status": "TIMEOUT"}\n'.encode('ascii'))
-            self.server._BaseServer__shutdown_request = True
 
         except Exception:
             self.request.sendall('{"status": "FAILED"}\n'.encode('ascii'))

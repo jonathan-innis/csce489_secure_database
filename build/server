@@ -4,7 +4,6 @@ from db.database import Database
 from parser.parser import Parser
 from functools import partial
 import re
-import signal
 import sys
 
 if __name__ == "__main__":

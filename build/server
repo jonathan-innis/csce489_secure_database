@@ -37,11 +37,13 @@ if __name__ == "__main__":
         database = Database(password)
         parser = Parser()
         # https://stackoverflow.com/a/52046062
+        socketserver.TCPServer.allow_reuse_address = True
         server = socketserver.TCPServer
         handler = partial(TCPHandler, database, parser, server)
         server = socketserver.TCPServer((HOST, PORT), handler)
         
         while True:
+        
             server.handle_request()
         exit(0)
 

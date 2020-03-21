@@ -7,12 +7,11 @@ import re
 import sys
 import signal
 
-class ExitSignal(Exception):
-    pass
 
 if __name__ == "__main__":
     def receiveSignal(signalNumber, frame):
-        raise ExitSignal()
+        print("received SIGTERM, exiting")
+        exit(0)
     
     signal.signal(signal.SIGTERM, receiveSignal)
     try:
@@ -49,10 +48,7 @@ if __name__ == "__main__":
 
     except OSError:
         print("port not currently available for use")
-        exit(63)
-    except ExitSignal:
-        print("received SIGTERM, exiting")
-        exit(0)
+        exit(63)        
     except Exception as e:
         print(e)
         exit(255)

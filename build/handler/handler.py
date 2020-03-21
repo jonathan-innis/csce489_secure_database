@@ -22,13 +22,17 @@ class TCPHandler(socketserver.BaseRequestHandler):
 
             while True:
                 data = self.request.recv(8192)
-                data = data.decode()
+                data = data.decode('ascii')
                 if END in data:
                     total_data.append(data)
                     break
                 total_data.append(data)
     
             result = ''.join(total_data)
+
+            if len(result) > 1000000:
+                raise Exception()
+
             reply = self.__parser.parse(self.__database, result.strip())
 
             should_exit = False
@@ -40,7 +44,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
                 parsed_elems.append(str(json.dumps(elem)))
 
             final_reply = '\n'.join(parsed_elems)
-            self.request.sendall(final_reply.encode('utf-8') + b"\n")
+            self.request.sendall(final_reply.encode('ascii') + b"\n")
             # https://stackoverflow.com/a/36017741
             if should_exit:
                 self.server._BaseServer__shutdown_request = True
@@ -48,5 +52,8 @@ class TCPHandler(socketserver.BaseRequestHandler):
 
 
         except socket.timeout:
-            self.request.sendall('{"status":"TIMEOUT"}\n'.encode('utf-8'))
+            self.request.sendall('{"status": "TIMEOUT"}\n'.encode('ascii'))
             self.server._BaseServer__shutdown_request = True
+
+        except Exception:
+            self.request.sendall('{"status": "FAILED"}\n'.encode('ascii'))

@@ -128,7 +128,7 @@ expr:       _LET _WS recursive                                                  
 
 dict:       "{" _WS? fieldvals _WS? "}"                                                     -> val_call
 
-func:       "split" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                      -> split_call
+func:       "split" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                        -> split_call
             | "concat" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                     -> concat_call
             | "tolower" _WS? "(" _WS? value _WS? ")"                                        -> tolower_call
             | "equal" _WS? "(" _WS? value _WS? "," _WS? value _WS? ")"                      -> equal_call
@@ -535,11 +535,9 @@ class Parser:
 
         # Catching Exceptions that are by the database and the parser
         except UnexpectedCharacters as e:
-            print(e)
             database.reset(rollback=True)
             return [{"status": "FAILED"}]
         except Exception as e:
-            print(e)
             if str(e.__context__) == "denied":
                 database.reset(rollback=True)
                 return [{"status": "DENIED"}]

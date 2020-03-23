@@ -52,7 +52,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
             for elem in reply:
                 if elem['status'] == 'EXITING':
                     should_exit = True
-                parsed_elems.append(str(json.dumps(elem)))
+                parsed_elems.append(str(json.dumps(elem, separators=(',', ':'))))
 
             final_reply = '\n'.join(parsed_elems)
             self.request.sendall(final_reply.encode('ascii') + b"\n")
@@ -61,7 +61,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
                 self.server._BaseServer__shutdown_request = True
 
         except socket.timeout:
-            self.request.sendall('{"status": "TIMEOUT"}\n'.encode('ascii'))
+            self.request.sendall('{"status":"TIMEOUT"}\n'.encode('ascii'))
 
         except Exception:
-            self.request.sendall('{"status": "FAILED"}\n'.encode('ascii'))
+            self.request.sendall('{"status":"FAILED"}\n'.encode('ascii'))

@@ -78,7 +78,7 @@ class Test_TCPHandler:
         client.send(b'test***')
         result = client.recv(1024)
         print(result)
-        assert result == b'{"status": "FAILED"}\n'
+        assert result == b'{"status":"FAILED"}\n'
         client.close()
         server.stop()
         
@@ -114,7 +114,7 @@ class Test_TCPHandler:
         client = socket.create_connection(("localhost", port))
         time.sleep(30)
         result = client.recv(1024)
-        assert result == b'{"status": "TIMEOUT"}\n'
+        assert result == b'{"status":"TIMEOUT"}\n'
         tests = [
             {
                 "text": 'as principal admin password "admin" do\nexit\n***',

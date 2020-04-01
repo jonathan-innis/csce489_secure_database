@@ -1,0 +1,69 @@
+{
+    "arguments": {
+        "argv": [
+            "%PORT%"
+        ]
+    },
+    "programs": [
+        {
+            "output": [
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "SET"
+                },
+                {
+                    "status": "SET_DELEGATION"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": "my string"
+                }
+            ],
+            "program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\ncreate principal alice \"password\"\ncreate principal eve \"password\"\nset x = \"my string\"\nset delegation x admin delegate -> alice\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "DENIED"
+                }
+            ],
+            "program": "as principal alice password \"password\" do\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "SET_DELEGATION"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": "exiting"
+                }
+            ],
+            "program": "as principal alice password \"password\" do\nset delegation x alice read -> bob\nreturn \"exiting\"\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "DENIED"
+                }
+            ],
+            "program": "as principal bob password \"password\" do\n return x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "DENIED"
+                }
+            ],
+            "program": "as principal alice password \"password\" do\n return x\n***"
+        }
+    ]
+}

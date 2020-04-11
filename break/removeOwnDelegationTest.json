@@ -23,6 +23,9 @@
                     "status": "SET_DELEGATION"
                 },
                 {
+                    "status": "SET_DELEGATION"
+                },
+                {
                     "status": "RETURNING",
                     "output": "my string"
                 }

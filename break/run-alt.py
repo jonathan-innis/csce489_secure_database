@@ -29,7 +29,7 @@ def readlines(sock, recv_buffer=4096, delim='\n'):
 	data = True
 	while data:
 		data = sock.recv(recv_buffer)
-		buffer += data
+		buffer += str(data)
 		while buffer.find(delim) != -1:
 			line, buffer = buffer.split('\n', 1)
 			yield line
@@ -70,7 +70,7 @@ for proginfo in progs:
     s = connect_to_server( port)
     print("===> sending program ")
     print(prog)
-    send_input(s,prog)
+    send_input(s,str.encode(prog, 'ascii'))
     # get output
     print("===> receiving output:")
     results = "["

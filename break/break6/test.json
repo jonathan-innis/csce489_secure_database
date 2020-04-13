@@ -6,8 +6,8 @@
         "base64": false
     },
     "programs": [
-        {"program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\ncreate principal alice \"password\"\ncreate principal eve \"password\"\nset x = \"my string\"\nreturn x\n***\n"},
-        {"program": "as principal admin password \"admin\" do\ndefault delegator = admin\ncreate principal jonathan \"password\"\nreturn x\n***\n"},
-        {"program": "as principal jonathan password \"password\" do\nreturn x\n***\n"}
+        {"program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\ncreate principal alice \"password\"\ncreate principal eve \"password\"\nset x = \"my string\"\nreturn x\n***\n", "base64": false},
+        {"program": "as principal admin password \"admin\" do\ndefault delegator = admin\ncreate principal jonathan \"password\"\nreturn x\n***\n", "base64": false},
+        {"program": "as principal jonathan password \"password\" do\nreturn x\n***\n", "base64": false}
     ]
 }

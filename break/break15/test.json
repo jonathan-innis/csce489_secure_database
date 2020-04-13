@@ -6,11 +6,11 @@
         "base64": false
     },
     "programs": [
-        {"program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\nset x = []\nappend to x with \"one\"\nappend to x with \"two\"\nappend to x with \"three\"\nreturn x\n***\n"},
-        {"program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n"},
-        {"program": "as principal admin password \"admin\" do\nset delegation x admin read -> bob\nreturn \"exiting\"\n***\n"},
-        {"program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n"},
-        {"program": "as principal admin password \"admin\" do\nset delegation x admin write -> bob\nreturn \"exiting\"\n***\n"},
-        {"program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n"}
+        {"program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\nset x = []\nappend to x with \"one\"\nappend to x with \"two\"\nappend to x with \"three\"\nreturn x\n***\n", "base64": false},
+        {"program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n", "base64": false},
+        {"program": "as principal admin password \"admin\" do\nset delegation x admin read -> bob\nreturn \"exiting\"\n***\n", "base64": false},
+        {"program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n", "base64": false},
+        {"program": "as principal admin password \"admin\" do\nset delegation x admin write -> bob\nreturn \"exiting\"\n***\n", "base64": false},
+        {"program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n", "base64": false}
     ]
 }

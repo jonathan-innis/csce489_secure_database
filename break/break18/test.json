@@ -6,6 +6,6 @@
         "base64": false
     },
     "programs": [
-        {"program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\nset delegation all admin delegate -> bob\nreturn \"exiting\"\n***"}
+        {"program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\nset delegation all admin delegate -> bob\nreturn \"exiting\"\n***", "base64": false}
     ]
 }

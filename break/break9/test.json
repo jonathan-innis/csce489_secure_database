@@ -6,6 +6,6 @@
         "base64": false
     },
     "programs": [
-        {"program": "as principal admin password \"admin\" do\nset x = []\nappend to x with \"one\"\nappend to x with \"two\"\nappend to x with \"three\"\nforeach y in x replacewith y\nreturn x\n***\n"}
+        {"program": "as principal admin password \"admin\" do\nset x = []\nappend to x with \"one\"\nappend to x with \"two\"\nappend to x with \"three\"\nforeach y in x replacewith y\nreturn x\n***\n", "base64": false}
     ]
 }

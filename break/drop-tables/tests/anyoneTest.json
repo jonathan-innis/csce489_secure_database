@@ -1,0 +1,54 @@
+{
+    "arguments": {
+        "argv": [
+            "%PORT%"
+        ]
+    },
+    "programs": [
+        {
+            "output": [
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "SET"
+                },
+                {
+                    "status": "SET_DELEGATION"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": "my string"
+                }
+            ],
+            "program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\ncreate principal alice \"password\"\ncreate principal eve \"password\"\nset x = \"my string\"\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "SET_DELEGATION"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": "my string"
+                }
+            ],
+            "program": "as principal admin password \"admin\" do\nset delegation x admin read -> anyone\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "RETURNING",
+                    "output": "my string"
+                }
+            ],
+            "program": "as principal bob password \"password\" do\nreturn x\n***\n"
+        }
+    ]
+}

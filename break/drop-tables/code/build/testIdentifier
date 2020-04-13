@@ -1,0 +1,6 @@
+as principal admin password "admin" do
+        create principal bob "firstPassword"
+        change password bob "otherPassword"
+        set delegation all p read -> q
+        exit
+***

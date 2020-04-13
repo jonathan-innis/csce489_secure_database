@@ -41,7 +41,7 @@
                     "status": "DENIED"
                 }
             ],
-            "program": "as principal bob password \"password\" do\nset delegation x bob read -> alice\nexit\n***\n"
+            "program": "as principal bob password \"password\" do\nset delegation x bob read -> alice\nchange password admin \"password\"\nreturn \"exiting\"\n***\n"
         },
         {
             "output": [

@@ -1,0 +1,35 @@
+{
+    "arguments": {
+        "argv": [
+            "%PORT%"
+        ]
+    },
+    "programs": [
+        {
+            "output": [
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "SET"
+                },
+                {
+                    "status": "SET_DELEGATION"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": "ok"
+                }
+            ],
+            "program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\nset x = \"ok\"\nset delegation x admin read -> bob\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "FAILED"
+                }
+            ],
+            "program": "as principal bob password \"password\" do\nset y = {f = x, f = \"string\"}\nreturn y\n***\n"
+        }
+    ]
+}

@@ -1,0 +1,7 @@
+as principal admin password "admin" do
+        create principal bob "firstPassword"
+        change password bob "otherPassword"
+        local x = "string"
+        set delegation x admin read -> bob
+        exit
+***

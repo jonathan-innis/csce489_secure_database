@@ -1,0 +1,12 @@
+{
+    "type": "correctness",
+    "target_team": 9,
+    "arguments": {
+        "argv": ["%PORT%"],
+        "base64": false
+    },
+    "programs": [
+        {"program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\nset x = \"ok\"\nreturn x\n***\n"},
+        {"program": "as principal bob password \"password\" do\nset y = {f = x, f = \"string\"}\nreturn y\n***\n"}
+    ]
+}

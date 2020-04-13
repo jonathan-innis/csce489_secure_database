@@ -1,3 +1,0 @@
-as principal alice password "alices_password" do
-   return msg
-***

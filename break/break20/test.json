@@ -1,6 +1,6 @@
 {
     "type": "correctness",
-    "target_team": "The Lads",
+    "target_team": "The-Lads",
     "arguments": {
         "argv": ["%PORT%"],
         "base64": false

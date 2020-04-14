@@ -1,6 +1,6 @@
 {
     "type": "correctness",
-    "target_team": "JavaScript is not THAT bad",
+    "target_team": "Javascript-is-not-THAT-bad",
     "arguments": {
         "argv": ["%PORT%"],
         "base64": false

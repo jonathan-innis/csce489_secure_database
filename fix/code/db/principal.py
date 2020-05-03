@@ -11,10 +11,9 @@ class Principal:
         salt (byte_string): The salt to use when hashing a principal's password.
         password (byte_string): The stored hashed password.
         is_admin (bool): Whether the user has admin privileges or not.
-        accessible (bool): Whether the user is accessible to users or not.
     """
 
-    def __init__(self, username, password, admin=False, accessible=True):
+    def __init__(self, username, password, admin=False):
         """
         The constructor for Principal class.
 
@@ -22,7 +21,6 @@ class Principal:
             username (string): The username of the principal.
             password (string): The password of the principal.
             admin (bool): Whether the user is an admin or not.
-            accessible (bool): Whether the user is accessible to users or not.
 
         - Sets the username of the principal
         - Generates a new salt for the password and hashes the password with this salt
@@ -31,9 +29,11 @@ class Principal:
         """
 
         self.__username = username
-        self.__password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+        if password is None:
+            self.__password = None
+        else:
+            self.__password = hashlib.sha256(password.encode('utf-8')).hexdigest()
         self.__admin = admin
-        self.__accessible = accessible
 
     def get_username(self):
         """
@@ -67,7 +67,7 @@ class Principal:
         """
 
         # If principal is not accessible, deny access
-        if not self.__accessible:
+        if self.__password is None:
             return False
 
         if hashlib.sha256(password.encode('utf-8')).hexdigest() == self.__password:
@@ -82,9 +82,6 @@ class Principal:
         Parameters:
             new_password (string): The new password for the principal
         """
-
-        if not self.__accessible:
-            return False
 
         self.__password = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
         return True

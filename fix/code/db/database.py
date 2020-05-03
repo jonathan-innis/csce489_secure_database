@@ -61,7 +61,7 @@ class Database:
         # Creates the admin
         p = Principal("admin", admin_password, admin=True)
         self.__principals["admin"] = p
-        p = Principal("anyone", "default", admin=False, accessible=False)
+        p = Principal("anyone", None, admin=False)
         self.__principals["anyone"] = p
 
     def get_principal(self, username):

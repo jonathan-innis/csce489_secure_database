@@ -35,6 +35,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
                 data = self.request.recv(8192)
                 data = data.decode('ascii')
                 if END in data:
+                    data = data[:data.find('***') + 3]
                     total_data.append(data)
                     break
                 total_data.append(data)

@@ -1,0 +1,1 @@
+This fix addresses the issue where the admin is not able to change the password of the pseudo-user "anyone." We have now fixed the code so that users are able to change the password and then access the pseudo-user.

@@ -1,0 +1,93 @@
+{
+    "arguments": {
+        "argv": [
+            "%PORT%"
+        ]
+    },
+    "programs": [
+        {
+            "output": [
+                {
+                    "status": "CREATE_PRINCIPAL"
+                },
+                {
+                    "status": "SET"
+                },
+                {
+                    "status": "APPEND"
+                },
+                {
+                    "status": "APPEND"
+                },
+                {
+                    "status": "APPEND"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": ["one", "two", "three"]
+                }
+            ],
+            "program": "as principal admin password \"admin\" do\ncreate principal bob \"password\"\nset x = []\nappend to x with \"one\"\nappend to x with \"two\"\nappend to x with \"three\"\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "DENIED"
+                }
+            ],
+            "program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "SET_DELEGATION"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": "exiting"
+                }
+            ],
+            "program": "as principal admin password \"admin\" do\nset delegation x admin read -> bob\nreturn \"exiting\"\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "DENIED"
+                }
+            ],
+            "program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "SET_DELEGATION"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": "exiting"
+                }
+            ],
+            "program": "as principal admin password \"admin\" do\nset delegation x admin write -> bob\nreturn \"exiting\"\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "FOREACH"
+                },
+                {
+                    "status": "RETURNING",
+                    "output": ["one", "two", "three"]
+                }
+            ],
+            "program": "as principal bob password \"password\" do\nforeach y in x replacewith y\nreturn x\n***\n"
+        },
+        {
+            "output": [
+                {
+                    "status": "FAILED"
+                }
+            ],
+            "program": "as principal bob password \"password\" do\nreturn y\n***\n"
+        }
+    ]
+}

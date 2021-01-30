@@ -1,0 +1,9 @@
+as principal admin password "admin" do
+        create principal bob "firstPassword"
+        change password bob "otherPassword"
+        local y = { y = "test" }
+        local x = { d = "as", s = "sd"}
+        set delegation x admin read -> bob
+        foreach x in container replacewith { a = "test", b = x }
+        return []
+***

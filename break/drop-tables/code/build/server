@@ -1,0 +1,124 @@
+#!/usr/bin/env python3.6
+
+import socket
+import sys
+import re
+import json
+import time
+import signal
+#from lark import LarkError
+from DataServer import DataServer
+from Parser import ProgramParser
+from commands import DuplicateKeyException, ArrayInForeachException, KeywordInIdentifierException, ProgramSizeException, Exit
+
+###
+# This program must return 0 when it receives SIGTERM
+###
+
+HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
+PORT = -1
+PASSWORD = ''
+
+if (len(sys.argv) == 2):
+    if (len(sys.argv[1]) > 4096):
+        exit(255)
+    PORT = sys.argv[1]
+    PASSWORS = 'admin'
+elif (len(sys.argv) == 3):
+    if (len(sys.argv[1]) > 4096):
+        exit(255)
+    if (len(sys.argv[2]) > 4096):
+        exit(255)
+    PORT = sys.argv[1]
+    PASSWORD = sys.argv[2]
+    if not re.fullmatch('[A-Za-z0-9_ ,;\.?!-]*', PASSWORD):
+        exit(255)
+else:
+    exit(255)
+
+# if the port is given as octal or hex, its string will not be equal to the
+# string of its integer interpretation
+if not re.fullmatch('[1-9][0-9]*', PORT):
+    exit(255)
+
+PORT = int(PORT)
+if (PORT < 1024 or PORT > 65535):
+    exit(255)
+
+p = ProgramParser()
+ds = DataServer()
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind((HOST, PORT))
+# Have to catch the error when the port is being used and return 63
+s.listen(1)
+conn, addr = s.accept()
+program = ''
+
+def kill_stuff(sig, frame):
+    conn.close()
+    s.shutdown(1)
+    s.close()
+    exit(0)
+
+signal.signal(signal.SIGTERM, kill_stuff)
+while True:
+    # program = ""
+    data = None
+    try:
+        conn.settimeout(30)
+        data = conn.recv(1_000_000) # MAYBE???
+        #print(f'server recieves: {data}')
+    except socket.timeout:
+        program = ''
+        conn.send(bytes(json.dumps({'status': 'TIMEOUT'}), 'utf-8'))
+        conn.close()
+        conn, addr = s.accept()
+        continue
+    except Exception as e:
+        print(e)
+    #try catch the following line for non ascii values
+    char = data.decode('utf-8')
+    program += bytes(char, 'utf-8').decode('unicode_escape')
+    endloc = program.rfind('***\n')
+    if (len(program) >= 4 and endloc != -1):
+        try:
+            commands = p.parseProgram(program[:endloc+5].rstrip().lstrip())
+            statuses = ds.execute_commands(commands)
+            status_str = ''
+            for index, status in enumerate(statuses):
+                status_str += json.dumps(status)
+                status_str += '\n'
+            conn.send(bytes(status_str, 'utf-8'))
+            if type(commands[-1]) is Exit:
+                kill_stuff(None, None)
+        except DuplicateKeyException as e:
+            status = json.dumps({'status':'FAILED'}) + '\n'
+            conn.send(bytes(status, 'utf-8'))
+        except ArrayInForeachException as e:
+            status = json.dumps({'status':'FAILED'}) + '\n'
+            conn.send(bytes(status, 'utf-8'))
+        except KeywordInIdentifierException as e:
+            status = json.dumps({'status':'FAILED'}) + '\n'
+            conn.send(bytes(status, 'utf-8'))
+        except ProgramSizeException as e:
+            status = json.dumps({'status':'FAILED'}) + '\n'
+            conn.send(bytes(status, 'utf-8'))
+        #except LarkError as e:
+        #    print(f'LarkError: {e}')
+        #    status = json.dumps({'status':'FAILED'}) + '\n'
+        #    conn.send(bytes(status, 'utf-8'))
+        #    print(status)
+        except Exception as e:
+            status = json.dumps({'status':'FAILED'}) + '\n'
+            conn.send(bytes(status, 'utf-8'))
+            print(e)
+            print('No actually this was our fault')
+        program = ''
+        conn.close()
+        conn, addr = s.accept()
+
+conn.close()
+s.shutdown(1)
+s.close()
